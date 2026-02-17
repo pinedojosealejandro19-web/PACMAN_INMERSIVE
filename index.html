@@ -1,134 +1,194 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>QR Gamepad</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>NES Gamepad</title>
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-      background: #000;
-      color: #fff;
-      font-family: system-ui, Arial, sans-serif;
-      overscroll-behavior: none;
-      touch-action: manipulation;
-    }
+<style>
+html, body{
+  margin:0;
+  padding:0;
+  width:100%;
+  height:100%;
+  background:#000;
+  overflow:hidden;
+  font-family:system-ui, Arial, sans-serif;
+}
 
-    .app {
-      min-height: 100svh;
-      height: 100dvh;
-      padding: 16px;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+/* Rotate phone message */
+.rotate{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#000;
+  color:#fff;
+  font-size:20px;
+  z-index:10;
+}
 
-    .top {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
+/* Hide rotate message in landscape */
+@media (orientation: landscape){
+  .rotate{ display:none; }
+}
 
-    input, button {
-      font-size: 18px;
-      padding: 14px 16px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.2);
-      background: rgba(255,255,255,.08);
-      color: #fff;
-    }
+/* Fullscreen controller container */
+.app{
+  width:100vw;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 
-    button {
-      cursor: pointer;
-    }
+/* NES body */
+.nes{
+  width:100vw;
+  height:100vh;
+  background:#d9d9d9;
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items:center;
+  padding:3vh;
+  box-sizing:border-box;
+}
 
-    .grid {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      align-content: end;
-    }
+/* Panels */
+.panel{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 
-    .btn {
-      width: 100%;
-      height: min(22vh, 140px);
-      font-size: 28px;
-      border-radius: 22px;
-    }
+/* D-Pad */
+.dpad{
+  position:relative;
+  width:40vh;
+  height:40vh;
+}
+.dpad button{
+  position:absolute;
+  background:#333;
+  color:#fff;
+  border:none;
+  font-size:4vh;
+  border-radius:1vh;
+}
+.up{ top:0; left:13vh; width:14vh; height:10vh; }
+.down{ bottom:0; left:13vh; width:14vh; height:10vh; }
+.left{ left:0; top:13vh; width:10vh; height:14vh; }
+.right{ right:0; top:13vh; width:10vh; height:14vh; }
 
-    #status {
-      opacity: 0.7;
-      font-size: 14px;
-    }
-  </style>
+/* Start / Select */
+.mid{
+  display:flex;
+  gap:4vh;
+}
+.mid button{
+  width:18vh;
+  height:6vh;
+  border-radius:5vh;
+  border:none;
+  background:#444;
+  color:#fff;
+  font-size:2vh;
+}
+
+/* A / B */
+.ab{
+  display:flex;
+  gap:6vh;
+}
+.ab button{
+  width:12vh;
+  height:12vh;
+  border-radius:50%;
+  border:none;
+  background:#e11d2e;
+  color:#fff;
+  font-size:4vh;
+}
+</style>
 </head>
 
 <body>
-  <div class="app">
-    <div class="top">
-      <input id="room" placeholder="ROOM (ABCD)" />
-      <button id="join">Join</button>
+
+<div class="rotate">Rotate phone to landscape</div>
+
+<div class="app">
+  <div class="nes">
+
+    <!-- LEFT -->
+    <div class="panel">
+      <div class="dpad">
+        <button id="up" class="up">▲</button>
+        <button id="down" class="down">▼</button>
+        <button id="left" class="left">◀</button>
+        <button id="right" class="right">▶</button>
+      </div>
     </div>
 
-    <p id="status">Not connected</p>
-
-    <div class="grid">
-      <button class="btn" id="left">⬅️</button>
-      <button class="btn" id="right">➡️</button>
-      <button class="btn" id="jump">🟦 Jump</button>
-      <button class="btn" id="down">⬇️</button>
+    <!-- MIDDLE -->
+    <div class="panel">
+      <div class="mid">
+        <button id="select">SELECT</button>
+        <button id="start">START</button>
+      </div>
     </div>
+
+    <!-- RIGHT -->
+    <div class="panel">
+      <div class="ab">
+        <button id="b">B</button>
+        <button id="a">A</button>
+      </div>
+    </div>
+
   </div>
+</div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAjUTUVx401HS9qrTmzab27nUiLvvMkfxQ",
-      authDomain: "pacman-86c4e.firebaseapp.com",
-      databaseURL: "https://pacman-86c4e-default-rtdb.firebaseio.com",
-      projectId: "pacman-86c4e",
-      storageBucket: "pacman-86c4e.firebasestorage.app",
-      messagingSenderId: "1044337774275",
-      appId: "1:1044337774275:web:362fcd603a473c04e95c76"
-    };
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAjUTUVx401HS9qrTmzab27nUiLvvMkfxQ",
+  authDomain: "pacman-86c4e.firebaseapp.com",
+  databaseURL: "https://pacman-86c4e-default-rtdb.firebaseio.com",
+  projectId: "pacman-86c4e",
+  storageBucket: "pacman-86c4e.firebasestorage.app",
+  messagingSenderId: "1044337774275",
+  appId: "1:1044337774275:web:362fcd603a473c04e95c76"
+};
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-    let room = "";
-    let ref = null;
+let ref = db.ref("rooms/ABCD/input");
 
-    document.getElementById("join").onclick = () => {
-      room = (document.getElementById("room").value.trim() || "ABCD");
-      ref = db.ref("rooms/" + room + "/input");
-      document.getElementById("status").textContent = "Connected to: " + room;
-      ref.set({ action: "connected", t: Date.now() });
-    };
+function send(action){
+  ref.set({ action, t: Date.now() });
+}
 
-    function send(action) {
-      if (!ref) return alert("Join a room first");
-      ref.set({ action, t: Date.now() });
-    }
+["up","down","left","right","a","b","start","select"].forEach(id=>{
+  const el=document.getElementById(id);
+  el.onclick=()=>send(id);
+  el.addEventListener("touchstart",e=>{
+    e.preventDefault();
+    send(id);
+  },{passive:false});
+});
 
-    ["left","right","jump","down"].forEach(id => {
-      const el = document.getElementById(id);
+/* Request fullscreen after first tap (Android works, iPhone needs Add to Home Screen) */
+document.body.addEventListener("click", ()=>{
+  if(document.documentElement.requestFullscreen){
+    document.documentElement.requestFullscreen();
+  }
+}, { once:true });
+</script>
 
-      el.onclick = () => send(id);
-
-      el.addEventListener("touchstart", e => {
-        e.preventDefault();
-        send(id);
-      }, { passive: false });
-    });
-  </script>
 </body>
 </html>
