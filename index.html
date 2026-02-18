@@ -2,72 +2,171 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pac-Man with Phone Controller</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>Pac-Man Controller</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
     body {
       display: flex;
+      flex-direction: column;
       justify-content: space-between;
       align-items: center;
-      height: 100vh;
-      background: #000;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
       font-family: Arial, sans-serif;
       color: white;
+      padding: 20px;
+      touch-action: none;
     }
-    #gameContainer {
+    
+    /* Top - Status */
+    #topSection {
+      width: 100%;
+      text-align: center;
+    }
+    
+    #status {
+      font-size: 16px;
+      margin-bottom: 10px;
+      text-align: center;
+      height: 25px;
+    }
+    
+    .status-ok {
+      color: #00ff00;
+      font-weight: bold;
+    }
+    
+    .status-error {
+      color: #ff0000;
+      font-weight: bold;
+    }
+    
+    #roomInfo {
+      font-size: 14px;
+      color: #aaa;
+    }
+    
+    /* Middle - Gamepad */
+    #gamepadSection {
       flex: 1;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
     }
-    canvas {
-      border: 2px solid yellow;
-      background: black;
+    
+    .gamepad {
+      display: grid;
+      grid-template-columns: repeat(3, 90px);
+      grid-gap: 12px;
+      margin: 30px 0;
     }
-    #sidePanel {
-      width: 300px;
-      padding: 20px;
-      background: #222;
-      text-align: center;
-      border-left: 2px solid yellow;
-    }
-    #qrcode {
-      margin: 20px 0;
-    }
-    #qrcode img {
-      max-width: 100%;
-    }
-    #roomCode {
-      font-size: 24px;
+    
+    button {
+      width: 90px;
+      height: 90px;
+      font-size: 32px;
       font-weight: bold;
-      color: #ff0;
-      margin: 10px 0;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      background: linear-gradient(145deg, #ffff00, #ffdd00);
+      color: #000;
+      transition: all 0.05s;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      box-shadow: 0 6px 0 #cccc00;
+      font-family: Arial, sans-serif;
+      active: false;
     }
-    #playerList {
-      margin-top: 20px;
-      text-align: left;
+    
+    button:active {
+      transform: translateY(6px);
+      box-shadow: 0 0 0 #cccc00;
+      background: linear-gradient(145deg, #ffdd00, #ffff00);
     }
-    .player-item {
-      background: #444;
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    #up { grid-column: 2; grid-row: 1; }
+    #left { grid-column: 1; grid-row: 2; }
+    #down { grid-column: 2; grid-row: 2; }
+    #right { grid-column: 3; grid-row: 2; }
+    
+    /* Bottom - Score & Info */
+    #bottomSection {
+      width: 100%;
+      text-align: center;
+    }
+    
+    #scoreDisplay {
+      font-size: 20px;
+      font-weight: bold;
+      color: #ffff00;
+      margin-bottom: 10px;
       padding: 10px;
-      margin: 5px 0;
-      border-radius: 5px;
+      background: rgba(255, 255, 0, 0.1);
+      border: 2px solid #ffff00;
+      border-radius: 8px;
+    }
+    
+    #playerInfo {
+      font-size: 12px;
+      color: #aaa;
+      line-height: 1.5;
+    }
+    
+    @media (max-height: 600px) {
+      .gamepad {
+        grid-template-columns: repeat(3, 70px);
+        grid-gap: 8px;
+      }
+      
+      button {
+        width: 70px;
+        height: 70px;
+        font-size: 24px;
+        box-shadow: 0 4px 0 #cccc00;
+      }
+      
+      button:active {
+        transform: translateY(4px);
+      }
     }
   </style>
 </head>
 <body>
-  <div id="gameContainer">
-    <canvas id="gameCanvas" width="560" height="620"></canvas>
+  <!-- TOP - Status & Room Info -->
+  <div id="topSection">
+    <div id="status">Connecting...</div>
+    <div id="roomInfo">Loading...</div>
   </div>
   
-  <div id="sidePanel">
-    <h2>Scan to Play!</h2>
-    <div id="qrcode"></div>
-    <div id="roomCode">Room: -</div>
-    <div id="playerList">
-      <h3>Players:</h3>
-      <div id="players"></div>
+  <!-- MIDDLE - Gamepad Controls -->
+  <div id="gamepadSection">
+    <h2 style="margin-bottom: 10px;">🎮 Game Controller</h2>
+    <div class="gamepad">
+      <button id="up" disabled>⬆️</button>
+      <button id="left" disabled>⬅️</button>
+      <button id="down" disabled>⬇️</button>
+      <button id="right" disabled>➡️</button>
+    </div>
+  </div>
+  
+  <!-- BOTTOM - Score & Info -->
+  <div id="bottomSection">
+    <div id="scoreDisplay">Score: 0</div>
+    <div id="playerInfo">
+      Use the arrow buttons to control Pac-Man
     </div>
   </div>
 
@@ -75,11 +174,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
   
-  <!-- QR Code Library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  
   <script>
-    // ===== FIREBASE CONFIG =====
+    // ===== FIREBASE CONFIG (SAME AS MAIN PAGE) =====
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -94,267 +190,164 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ===== GAME LOGIC =====
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+    // ===== CONTROLLER LOGIC =====
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomCode = urlParams.get('room');
+    const gameId = urlParams.get('gameId');
+    const statusDiv = document.getElementById('status');
+    const roomInfoDiv = document.getElementById('roomInfo');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const playerInfoDiv = document.getElementById('playerInfo');
 
-    let gameState = {
-      pacman: { x: 280, y: 310, direction: 0, nextDirection: 0 },
-      ghosts: [
-        { x: 240, y: 210, color: '#ff0000', dx: 1, dy: 0 },
-        { x: 280, y: 210, color: '#ffb8ff', dx: -1, dy: 0 },
-        { x: 320, y: 210, color: '#00ffff', dx: 0, dy: 1 }
-      ],
-      dots: [],
-      score: 0,
-      gameRunning: false,
-      players: {},
-      roomCode: null,
-      gameId: null
-    };
+    let playerConnected = false;
+    let playerName = '';
+    let lastActionTime = 0;
 
-    // Generate unique room code
-    function generateRoomCode() {
-      return Math.random().toString(36).substring(2, 8).toUpperCase();
-    }
-
-    // Initialize dots on canvas
-    function initDots() {
-      gameState.dots = [];
-      for (let x = 40; x < 540; x += 20) {
-        for (let y = 60; y < 600; y += 20) {
-          if (!isWall(x, y)) {
-            gameState.dots.push({ x, y, eaten: false });
-          }
-        }
-      }
-    }
-
-    function isWall(x, y) {
-      return (x < 20 || x > 540 || y < 40 || y > 600);
-    }
-
-    // Create a new game room in Firebase
-    function createGameRoom() {
-      gameState.roomCode = generateRoomCode();
-      gameState.gameId = db.ref('games').push().key;
-
-      const gameRef = db.ref(`games/${gameState.gameId}`);
-      
-      gameRef.set({
-        roomCode: gameState.roomCode,
-        status: 'waiting',
-        host: true,
-        createdAt: Date.now(),
-        players: {},
-        gameState: {
-          score: 0,
-          pacmanX: gameState.pacman.x,
-          pacmanY: gameState.pacman.y
-        }
-      });
-
-      // Listen for player inputs
-      gameRef.child('players').on('child_added', (snapshot) => {
-        const player = snapshot.val();
-        if (player && player.action) {
-          handlePlayerInput(player.action);
-        }
-      });
-
-      // Listen for player actions
-      gameRef.child('actions').on('child_changed', (snapshot) => {
-        const action = snapshot.val();
-        if (action) {
-          handlePlayerInput(action);
-        }
-      });
-
-      // Display QR Code
-      displayQRCode();
-      document.getElementById('roomCode').textContent = `Room: ${gameState.roomCode}`;
-      
-      // Start game loop
-      gameState.gameRunning = true;
-      initDots();
-      gameLoop();
-    }
-
-    // Display QR Code
-    function displayQRCode() {
-      const controllerUrl = `${window.location.origin}/controller.html?room=${gameState.roomCode}&gameId=${gameState.gameId}`;
-      
-      // Clear previous QR code
-      const qrcodeDiv = document.getElementById('qrcode');
-      qrcodeDiv.innerHTML = '';
-      
-      new QRCode(qrcodeDiv, {
-        text: controllerUrl,
-        width: 200,
-        height: 200
-      });
-    }
-
-    // Handle player input from controller
-    function handlePlayerInput(action) {
-      switch(action) {
-        case 'up': 
-          if (gameState.pacman.direction !== 1) gameState.pacman.nextDirection = -1;
-          break;
-        case 'down': 
-          if (gameState.pacman.direction !== -1) gameState.pacman.nextDirection = 1;
-          break;
-        case 'left': 
-          if (gameState.pacman.direction !== 2) gameState.pacman.nextDirection = -2;
-          break;
-        case 'right': 
-          if (gameState.pacman.direction !== -2) gameState.pacman.nextDirection = 2;
-          break;
-      }
-    }
-
-    // Update Pac-Man position
-    function updatePacman() {
-      const speed = 5;
-      let newX = gameState.pacman.x;
-      let newY = gameState.pacman.y;
-
-      // Try next direction first
-      if (gameState.pacman.nextDirection === -1) newY -= speed; // up
-      else if (gameState.pacman.nextDirection === 1) newY += speed; // down
-      else if (gameState.pacman.nextDirection === -2) newX -= speed; // left
-      else if (gameState.pacman.nextDirection === 2) newX += speed; // right
-
-      if (!isWall(newX, newY)) {
-        gameState.pacman.x = newX;
-        gameState.pacman.y = newY;
-        gameState.pacman.direction = gameState.pacman.nextDirection;
-      } else {
-        // Continue in current direction
-        newX = gameState.pacman.x;
-        newY = gameState.pacman.y;
-        
-        if (gameState.pacman.direction === -1) newY -= speed;
-        else if (gameState.pacman.direction === 1) newY += speed;
-        else if (gameState.pacman.direction === -2) newX -= speed;
-        else if (gameState.pacman.direction === 2) newX += speed;
-
-        if (!isWall(newX, newY)) {
-          gameState.pacman.x = newX;
-          gameState.pacman.y = newY;
-        }
+    // Check connection to game
+    function checkConnection() {
+      if (!roomCode || !gameId) {
+        statusDiv.textContent = '❌ Invalid QR Code';
+        statusDiv.className = 'status-error';
+        roomInfoDiv.textContent = 'Please scan a valid QR code';
+        disableButtons();
+        return;
       }
 
-      // Eat dots
-      gameState.dots.forEach(dot => {
-        if (Math.abs(dot.x - gameState.pacman.x) < 10 && Math.abs(dot.y - gameState.pacman.y) < 10) {
-          if (!dot.eaten) {
-            dot.eaten = true;
-            gameState.score += 10;
-          }
-        }
-      });
-
-      // Update score in Firebase
-      if (gameState.gameId) {
-        db.ref(`games/${gameState.gameId}/gameState/score`).set(gameState.score);
-      }
-    }
-
-    // Update ghost positions (simple AI)
-    function updateGhosts() {
-      gameState.ghosts.forEach(ghost => {
-        let newX = ghost.x + ghost.dx * 2;
-        let newY = ghost.y + ghost.dy * 2;
-
-        if (isWall(newX, newY)) {
-          // Change direction randomly
-          const directions = [
-            { dx: 1, dy: 0 },
-            { dx: -1, dy: 0 },
-            { dx: 0, dy: 1 },
-            { dx: 0, dy: -1 }
-          ];
-          const newDir = directions[Math.floor(Math.random() * directions.length)];
-          ghost.dx = newDir.dx;
-          ghost.dy = newDir.dy;
+      const gameRef = db.ref(`games/${gameId}`);
+      
+      gameRef.once('value', (snapshot) => {
+        if (snapshot.exists()) {
+          playerConnected = true;
+          statusDiv.textContent = '✅ Connected!';
+          statusDiv.className = 'status-ok';
+          roomInfoDiv.textContent = `Room: ${roomCode}`;
+          playerInfoDiv.textContent = 'Ready to play! Use arrows to control Pac-Man';
+          enableButtons();
+          registerPlayer();
+          listenForGameUpdates();
         } else {
-          ghost.x = newX;
-          ghost.y = newY;
+          statusDiv.textContent = '❌ Game not found';
+          statusDiv.className = 'status-error';
+          roomInfoDiv.textContent = 'The game session has ended';
+          disableButtons();
         }
       });
     }
 
-    // Draw game canvas
-    function draw() {
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Draw border
-      ctx.strokeStyle = '#0066ff';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(20, 40, 520, 560);
-
-      // Draw dots
-      ctx.fillStyle = '#ffff00';
-      gameState.dots.forEach(dot => {
-        if (!dot.eaten) {
-          ctx.beginPath();
-          ctx.arc(dot.x, dot.y, 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
+    // Register player in Firebase
+    function registerPlayer() {
+      playerName = `Player ${Math.floor(Math.random() * 10000)}`;
+      const gameRef = db.ref(`games/${gameId}/players/${Date.now()}`);
+      gameRef.set({
+        name: playerName,
+        joinedAt: Date.now()
       });
+    }
 
-      // Draw Pac-Man
-      ctx.fillStyle = '#ffff00';
-      ctx.beginPath();
-      ctx.arc(gameState.pacman.x, gameState.pacman.y, 8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Draw ghosts
-      gameState.ghosts.forEach(ghost => {
-        ctx.fillStyle = ghost.color;
-        ctx.beginPath();
-        ctx.arc(ghost.x, ghost.y, 8, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Ghost eyes
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(ghost.x - 3, ghost.y - 2, 2, 0, Math.PI * 2);
-        ctx.arc(ghost.x + 3, ghost.y - 2, 2, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      // Draw score
-      ctx.fillStyle = '#ffff00';
-      ctx.font = 'bold 20px Arial';
-      ctx.fillText(`Score: ${gameState.score}`, 30, 30);
+    // Listen for game updates
+    function listenForGameUpdates() {
+      const gameRef = db.ref(`games/${gameId}/gameState`);
       
-      // Draw remaining dots counter
-      const dotsRemaining = gameState.dots.filter(d => !d.eaten).length;
-      ctx.fillText(`Dots: ${dotsRemaining}`, 400, 30);
+      gameRef.on('value', (snapshot) => {
+        const gameData = snapshot.val();
+        if (gameData && gameData.score !== undefined) {
+          scoreDisplay.textContent = `Score: ${gameData.score}`;
+        }
+      });
     }
 
-    // Main game loop
-    function gameLoop() {
-      updatePacman();
-      updateGhosts();
-      draw();
-      requestAnimationFrame(gameLoop);
+    // Send input to Firebase
+    function sendInput(action) {
+      if (!playerConnected || !gameId) return;
+
+      const now = Date.now();
+      // Throttle inputs to avoid spam (50ms delay)
+      if (now - lastActionTime < 50) return;
+      lastActionTime = now;
+
+      const actionRef = db.ref(`games/${gameId}/actions/lastAction`);
+      actionRef.set(action, (error) => {
+        if (error) {
+          console.error('Error sending input:', error);
+          statusDiv.textContent = '⚠️ Connection lost';
+          statusDiv.className = 'status-error';
+          disableButtons();
+        }
+      });
     }
 
-    // Initialize game on page load
-    window.addEventListener('load', () => {
-      createGameRoom();
+    // Enable gamepad buttons
+    function enableButtons() {
+      document.querySelectorAll('.gamepad button').forEach(btn => {
+        btn.disabled = false;
+      });
+    }
+
+    // Disable gamepad buttons
+    function disableButtons() {
+      document.querySelectorAll('.gamepad button').forEach(btn => {
+        btn.disabled = true;
+      });
+    }
+
+    // Setup button event listeners
+    const buttons = ['up', 'down', 'left', 'right'];
+
+    buttons.forEach(button => {
+      const el = document.getElementById(button);
+      
+      // Touch events
+      el.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        el.style.background = 'linear-gradient(145deg, #ffdd00, #ffff00)';
+        sendInput(button);
+      });
+      
+      el.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        el.style.background = 'linear-gradient(145deg, #ffff00, #ffdd00)';
+      });
+
+      // Mouse events (for testing on desktop)
+      el.addEventListener('mousedown', () => {
+        el.style.background = 'linear-gradient(145deg, #ffdd00, #ffff00)';
+        sendInput(button);
+      });
+
+      el.addEventListener('mouseup', () => {
+        el.style.background = 'linear-gradient(145deg, #ffff00, #ffdd00)';
+      });
+
+      el.addEventListener('mouseleave', () => {
+        el.style.background = 'linear-gradient(145deg, #ffff00, #ffdd00)';
+      });
     });
 
-    // Clean up Firebase references on page unload
-    window.addEventListener('beforeunload', () => {
-      if (gameState.gameId) {
-        db.ref(`games/${gameState.gameId}`).remove();
+    // Check connection on load
+    window.addEventListener('load', () => {
+      setTimeout(checkConnection, 500);
+    });
+
+    // Monitor Firebase connection
+    db.ref('.info/connected').on('value', (snapshot) => {
+      if (snapshot.val() === true) {
+        if (!playerConnected) {
+          checkConnection();
+        }
+      } else {
+        statusDiv.textContent = '❌ No internet';
+        statusDiv.className = 'status-error';
+        playerConnected = false;
+        disableButtons();
       }
     });
+
+    // Reconnect if game is lost
+    setInterval(() => {
+      if (!playerConnected && roomCode && gameId) {
+        checkConnection();
+      }
+    }, 5000);
   </script>
 </body>
 </html>
