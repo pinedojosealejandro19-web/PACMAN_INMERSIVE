@@ -1,317 +1,445 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SCREEN (Input Monitor)</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pac-Man with Phone Controller</title>
   <style>
-    html, body{
-      margin:0;
-      padding:0;
-      font-family: system-ui, Arial, sans-serif;
-      background:#0b0b0f;
-      color:#fff;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 100vh;
+      background: #000;
+      font-family: Arial, sans-serif;
+      color: white;
     }
-    .wrap{
-      max-width: 900px;
-      margin: 24px auto;
-      padding: 16px;
-      display:flex;
-      flex-direction:column;
-      gap: 14px;
+    
+    /* Left side - Game */
+    #gameContainer {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
     }
-    .top{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
+    
+    canvas {
+      border: 4px solid yellow;
+      background: black;
+      box-shadow: 0 0 20px rgba(255, 255, 0, 0.5);
     }
-    input, button{
-      font-size:16px;
-      padding:12px 14px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.18);
-      background: rgba(255,255,255,.08);
-      color:#fff;
-      outline:none;
+    
+    /* Right side - QR Code Panel */
+    #sidePanel {
+      width: 400px;
+      padding: 40px 30px;
+      background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+      text-align: center;
+      border-left: 3px solid #ffff00;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      box-shadow: inset 2px 0 10px rgba(0, 0, 0, 0.5);
     }
-    button{ cursor:pointer; }
-
-    .big{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 12px;
-      padding: 18px;
-      border-radius: 16px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
+    
+    #sidePanel h2 {
+      font-size: 32px;
+      margin-bottom: 30px;
+      color: #ffff00;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
     }
-    .big h1{
-      margin:0;
-      font-size: 18px;
-      opacity:.85;
-      font-weight: 700;
-    }
-    .action{
-      font-size: 42px;
-      font-weight: 900;
-      letter-spacing: .04em;
-    }
-    .time{
-      opacity:.65;
-      font-size: 13px;
-    }
-
-    /* Mini NES visual */
-    .nes{
-      width: 100%;
-      border-radius: 18px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      padding: 16px;
-      display:grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
-      align-items:center;
-    }
-    .panel{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      min-height: 160px;
-      border-radius: 14px;
-      background: rgba(0,0,0,.22);
-      border:1px solid rgba(255,255,255,.08);
-      position:relative;
-    }
-
-    /* Dpad */
-    .dpad{
-      width: 140px;
-      height: 140px;
-      position:relative;
-    }
-    .btn{
-      position:absolute;
-      display:grid;
-      place-items:center;
-      user-select:none;
-      width: 52px;
-      height: 44px;
+    
+    #qrcode {
+      margin: 20px auto;
+      padding: 20px;
+      background: white;
       border-radius: 10px;
-      background: #333;
-      border: 1px solid rgba(255,255,255,.12);
-      font-weight: 900;
-      color:#fff;
-      opacity:.55;
-      transition: transform .05s, opacity .05s, box-shadow .05s;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
     }
-    .btn.active{
-      opacity: 1;
-      transform: translateY(1px) scale(1.02);
-      box-shadow: 0 10px 20px rgba(0,0,0,.35);
+    
+    #qrcode img {
+      max-width: 100%;
+      height: auto;
     }
-    .up{ top:0; left:44px; }
-    .down{ bottom:0; left:44px; }
-    .left{ left:0; top:48px; width:44px; height:52px; }
-    .right{ right:0; top:48px; width:44px; height:52px; }
-    .center{
-      position:absolute;
-      inset: 44px;
-      border-radius: 12px;
-      background:#222;
-      opacity:.6;
-      border:1px solid rgba(255,255,255,.08);
+    
+    #roomCode {
+      font-size: 28px;
+      font-weight: bold;
+      color: #ffff00;
+      margin: 20px 0;
+      padding: 15px;
+      background: rgba(255, 255, 0, 0.1);
+      border: 2px solid #ffff00;
+      border-radius: 8px;
     }
-
-    /* Start/Select */
-    .mid{
-      display:flex;
-      gap: 14px;
-      align-items:center;
-      justify-content:center;
+    
+    #playerList {
+      margin-top: 30px;
+      text-align: left;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 15px;
+      border-radius: 8px;
+      max-height: 300px;
+      overflow-y: auto;
     }
-    .pill{
-      width: 120px;
-      height: 38px;
-      border-radius: 999px;
-      background:#444;
-      border: 1px solid rgba(255,255,255,.12);
-      display:grid;
-      place-items:center;
-      font-weight: 900;
-      letter-spacing:.08em;
-      opacity:.55;
-      transition: opacity .05s, transform .05s;
+    
+    #playerList h3 {
+      color: #ffff00;
+      margin-bottom: 15px;
+      font-size: 18px;
     }
-    .pill.active{
-      opacity: 1;
-      transform: translateY(1px);
-    }
-
-    /* A/B */
-    .ab{
-      display:flex;
-      gap: 18px;
-      align-items:center;
-      justify-content:center;
-      transform: rotate(-12deg);
-    }
-    .round{
-      width: 72px;
-      height: 72px;
-      border-radius: 999px;
-      background:#e11d2e;
-      border: 2px solid rgba(0,0,0,.25);
-      display:grid;
-      place-items:center;
-      font-size: 22px;
-      font-weight: 900;
-      opacity:.55;
-      transition: opacity .05s, transform .05s, box-shadow .05s;
-    }
-    .round.active{
-      opacity:1;
-      transform: translateY(2px);
-      box-shadow: 0 14px 22px rgba(0,0,0,.35);
-    }
-
-    .log{
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 13px;
-      white-space: pre-wrap;
+    
+    .player-item {
+      background: rgba(255, 255, 0, 0.1);
       padding: 12px;
-      border-radius: 14px;
-      background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.12);
-      opacity:.85;
+      margin: 8px 0;
+      border-left: 3px solid #ffff00;
+      border-radius: 5px;
+      font-size: 14px;
+      color: #fff;
+    }
+    
+    .player-item.active {
+      background: rgba(0, 255, 0, 0.2);
+      border-left-color: #00ff00;
+    }
+    
+    #instructions {
+      margin-top: 30px;
+      font-size: 13px;
+      color: #aaa;
+      line-height: 1.6;
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <input id="room" placeholder="ROOM (ABCD)" />
-      <button id="startListen">Start</button>
-      <span id="status" class="time">Waiting…</span>
+  <!-- LEFT SIDE - GAME CANVAS -->
+  <div id="gameContainer">
+    <canvas id="gameCanvas" width="560" height="620"></canvas>
+  </div>
+  
+  <!-- RIGHT SIDE - QR CODE & INFO -->
+  <div id="sidePanel">
+    <h2>📱 Scan to Play!</h2>
+    
+    <div id="qrcode"></div>
+    
+    <div id="roomCode">Room: Loading...</div>
+    
+    <div id="playerList">
+      <h3>👥 Connected Players:</h3>
+      <div id="players">Waiting for players...</div>
     </div>
-
-    <div class="big">
-      <div>
-        <h1>Last input</h1>
-        <div id="bigAction" class="action">—</div>
-        <div id="bigTime" class="time">—</div>
-      </div>
-      <div class="time" style="text-align:right">
-        Tip: phone + screen must use the SAME room code.
-      </div>
+    
+    <div id="instructions">
+      <strong>How to Play:</strong><br>
+      1️⃣ Scan QR code with your phone<br>
+      2️⃣ Use the gamepad buttons<br>
+      3️⃣ Control Pac-Man!
     </div>
-
-    <div class="nes">
-      <div class="panel">
-        <div class="dpad">
-          <div id="v_up" class="btn up">▲</div>
-          <div id="v_down" class="btn down">▼</div>
-          <div id="v_left" class="btn left">◀</div>
-          <div id="v_right" class="btn right">▶</div>
-          <div class="center"></div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="mid">
-          <div id="v_select" class="pill">SELECT</div>
-          <div id="v_start" class="pill">START</div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="ab">
-          <div id="v_b" class="round">B</div>
-          <div id="v_a" class="round">A</div>
-        </div>
-      </div>
-    </div>
-
-    <div id="raw" class="log">{}</div>
   </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
+  
+  <!-- QR Code Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
   <script>
+    // ===== FIREBASE CONFIG =====
     const firebaseConfig = {
-      apiKey: "AIzaSyAjUTUVx401HS9qrTmzab27nUiLvvMkfxQ",
-      authDomain: "pacman-86c4e.firebaseapp.com",
-      databaseURL: "https://pacman-86c4e-default-rtdb.firebaseio.com",
-      projectId: "pacman-86c4e",
-      storageBucket: "pacman-86c4e.firebasestorage.app",
-      messagingSenderId: "1044337774275",
-      appId: "1:1044337774275:web:362fcd603a473c04e95c76"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let unsubRef = null;
+    // ===== GAME LOGIC =====
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
-    const statusEl = document.getElementById("status");
-    const bigActionEl = document.getElementById("bigAction");
-    const bigTimeEl = document.getElementById("bigTime");
-    const rawEl = document.getElementById("raw");
+    let gameState = {
+      pacman: { x: 280, y: 310, direction: 0, nextDirection: 0 },
+      ghosts: [
+        { x: 240, y: 210, color: '#ff0000', dx: 1, dy: 0 },
+        { x: 280, y: 210, color: '#ffb8ff', dx: -1, dy: 0 },
+        { x: 320, y: 210, color: '#00ffff', dx: 0, dy: 1 }
+      ],
+      dots: [],
+      score: 0,
+      gameRunning: false,
+      players: {},
+      roomCode: null,
+      gameId: null
+    };
 
-    const allIds = ["up","down","left","right","a","b","start","select"];
-    function clearActive(){
-      allIds.forEach(k=>{
-        const el = document.getElementById("v_" + k);
-        el.classList.remove("active");
-      });
+    // Generate unique room code
+    function generateRoomCode() {
+      return Math.random().toString(36).substring(2, 8).toUpperCase();
     }
 
-    function prettyAction(a){
-      if(!a) return "—";
-      const map = {
-        up:"UP", down:"DOWN", left:"LEFT", right:"RIGHT",
-        a:"A", b:"B", start:"START", select:"SELECT",
-        connected:"CONNECTED"
-      };
-      return map[a] || String(a).toUpperCase();
+    // Initialize dots on canvas
+    function initDots() {
+      gameState.dots = [];
+      for (let x = 40; x < 540; x += 20) {
+        for (let y = 60; y < 600; y += 20) {
+          if (!isWall(x, y)) {
+            gameState.dots.push({ x, y, eaten: false });
+          }
+        }
+      }
     }
 
-    document.getElementById("startListen").onclick = () => {
-      const room = (document.getElementById("room").value.trim() || "ABCD").toUpperCase();
+    function isWall(x, y) {
+      return (x < 20 || x > 540 || y < 40 || y > 600);
+    }
 
-      // detach old listener
-      if(unsubRef) unsubRef.off();
+    // Create a new game room in Firebase
+    function createGameRoom() {
+      gameState.roomCode = generateRoomCode();
+      gameState.gameId = db.ref('games').push().key;
 
-      statusEl.textContent = "Listening: " + room;
-
-      unsubRef = db.ref("rooms/" + room + "/input");
-      unsubRef.on("value", (snap) => {
-        const data = snap.val();
-        if(!data) return;
-
-        // show raw
-        rawEl.textContent = JSON.stringify(data, null, 2);
-
-        // show big action
-        const action = data.action;
-        bigActionEl.textContent = prettyAction(action);
-
-        const t = data.t ? new Date(data.t) : new Date();
-        bigTimeEl.textContent = "Time: " + t.toLocaleString();
-
-        // highlight
-        clearActive();
-        if(allIds.includes(action)){
-          document.getElementById("v_" + action).classList.add("active");
-          // remove highlight after a short time (so you can see taps)
-          setTimeout(clearActive, 180);
+      const gameRef = db.ref(`games/${gameState.gameId}`);
+      
+      gameRef.set({
+        roomCode: gameState.roomCode,
+        status: 'active',
+        host: true,
+        createdAt: Date.now(),
+        players: {},
+        gameState: {
+          score: 0,
+          pacmanX: gameState.pacman.x,
+          pacmanY: gameState.pacman.y
         }
       });
-    };
+
+      // Listen for player actions
+      gameRef.child('actions').on('child_changed', (snapshot) => {
+        const action = snapshot.val();
+        if (action) {
+          handlePlayerInput(action);
+        }
+      });
+
+      // Listen for player connections
+      gameRef.child('players').on('value', (snapshot) => {
+        gameState.players = snapshot.val() || {};
+        updatePlayerList();
+      });
+
+      // Display QR Code
+      displayQRCode();
+      document.getElementById('roomCode').textContent = `Room: ${gameState.roomCode}`;
+      
+      // Start game loop
+      gameState.gameRunning = true;
+      initDots();
+      gameLoop();
+    }
+
+    // Display QR Code
+    function displayQRCode() {
+      const controllerUrl = `${window.location.origin}/controller.html?room=${gameState.roomCode}&gameId=${gameState.gameId}`;
+      
+      // Clear previous QR code
+      const qrcodeDiv = document.getElementById('qrcode');
+      qrcodeDiv.innerHTML = '';
+      
+      new QRCode(qrcodeDiv, {
+        text: controllerUrl,
+        width: 220,
+        height: 220,
+        colorDark: '#000000',
+        colorLight: '#ffffff'
+      });
+    }
+
+    // Update player list display
+    function updatePlayerList() {
+      const playersDiv = document.getElementById('players');
+      const playerCount = Object.keys(gameState.players).length;
+
+      if (playerCount === 0) {
+        playersDiv.innerHTML = '<div class="player-item">Waiting for players...</div>';
+      } else {
+        playersDiv.innerHTML = Object.values(gameState.players)
+          .map(player => `<div class="player-item active">✓ ${player.name}</div>`)
+          .join('');
+      }
+    }
+
+    // Handle player input from controller
+    function handlePlayerInput(action) {
+      switch(action) {
+        case 'up': 
+          if (gameState.pacman.direction !== 1) gameState.pacman.nextDirection = -1;
+          break;
+        case 'down': 
+          if (gameState.pacman.direction !== -1) gameState.pacman.nextDirection = 1;
+          break;
+        case 'left': 
+          if (gameState.pacman.direction !== 2) gameState.pacman.nextDirection = -2;
+          break;
+        case 'right': 
+          if (gameState.pacman.direction !== -2) gameState.pacman.nextDirection = 2;
+          break;
+      }
+    }
+
+    // Update Pac-Man position
+    function updatePacman() {
+      const speed = 5;
+      let newX = gameState.pacman.x;
+      let newY = gameState.pacman.y;
+
+      // Try next direction first
+      if (gameState.pacman.nextDirection === -1) newY -= speed; // up
+      else if (gameState.pacman.nextDirection === 1) newY += speed; // down
+      else if (gameState.pacman.nextDirection === -2) newX -= speed; // left
+      else if (gameState.pacman.nextDirection === 2) newX += speed; // right
+
+      if (!isWall(newX, newY)) {
+        gameState.pacman.x = newX;
+        gameState.pacman.y = newY;
+        gameState.pacman.direction = gameState.pacman.nextDirection;
+      } else {
+        // Continue in current direction
+        newX = gameState.pacman.x;
+        newY = gameState.pacman.y;
+        
+        if (gameState.pacman.direction === -1) newY -= speed;
+        else if (gameState.pacman.direction === 1) newY += speed;
+        else if (gameState.pacman.direction === -2) newX -= speed;
+        else if (gameState.pacman.direction === 2) newX += speed;
+
+        if (!isWall(newX, newY)) {
+          gameState.pacman.x = newX;
+          gameState.pacman.y = newY;
+        }
+      }
+
+      // Eat dots
+      gameState.dots.forEach(dot => {
+        if (Math.abs(dot.x - gameState.pacman.x) < 10 && Math.abs(dot.y - gameState.pacman.y) < 10) {
+          if (!dot.eaten) {
+            dot.eaten = true;
+            gameState.score += 10;
+          }
+        }
+      });
+
+      // Update score in Firebase
+      if (gameState.gameId) {
+        db.ref(`games/${gameState.gameId}/gameState/score`).set(gameState.score);
+      }
+    }
+
+    // Update ghost positions (simple AI)
+    function updateGhosts() {
+      gameState.ghosts.forEach(ghost => {
+        let newX = ghost.x + ghost.dx * 2;
+        let newY = ghost.y + ghost.dy * 2;
+
+        if (isWall(newX, newY)) {
+          // Change direction randomly
+          const directions = [
+            { dx: 1, dy: 0 },
+            { dx: -1, dy: 0 },
+            { dx: 0, dy: 1 },
+            { dx: 0, dy: -1 }
+          ];
+          const newDir = directions[Math.floor(Math.random() * directions.length)];
+          ghost.dx = newDir.dx;
+          ghost.dy = newDir.dy;
+        } else {
+          ghost.x = newX;
+          ghost.y = newY;
+        }
+      });
+    }
+
+    // Draw game canvas
+    function draw() {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw border
+      ctx.strokeStyle = '#0066ff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(20, 40, 520, 560);
+
+      // Draw dots
+      ctx.fillStyle = '#ffff00';
+      gameState.dots.forEach(dot => {
+        if (!dot.eaten) {
+          ctx.beginPath();
+          ctx.arc(dot.x, dot.y, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // Draw Pac-Man
+      ctx.fillStyle = '#ffff00';
+      ctx.beginPath();
+      ctx.arc(gameState.pacman.x, gameState.pacman.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw ghosts
+      gameState.ghosts.forEach(ghost => {
+        ctx.fillStyle = ghost.color;
+        ctx.beginPath();
+        ctx.arc(ghost.x, ghost.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Ghost eyes
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(ghost.x - 3, ghost.y - 2, 2, 0, Math.PI * 2);
+        ctx.arc(ghost.x + 3, ghost.y - 2, 2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw score
+      ctx.fillStyle = '#ffff00';
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText(`Score: ${gameState.score}`, 30, 30);
+      
+      // Draw remaining dots counter
+      const dotsRemaining = gameState.dots.filter(d => !d.eaten).length;
+      ctx.fillText(`Dots: ${dotsRemaining}`, 400, 30);
+    }
+
+    // Main game loop
+    function gameLoop() {
+      updatePacman();
+      updateGhosts();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Initialize game on page load
+    window.addEventListener('load', () => {
+      createGameRoom();
+    });
+
+    // Clean up Firebase references on page unload
+    window.addEventListener('beforeunload', () => {
+      if (gameState.gameId) {
+        db.ref(`games/${gameState.gameId}`).remove();
+      }
+    });
   </script>
 </body>
 </html>
