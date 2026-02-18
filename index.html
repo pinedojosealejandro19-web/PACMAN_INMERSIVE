@@ -1,378 +1,78 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Arcade Gamepad UI</title>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pac-Man with Phone Controller</title>
   <style>
-    :root{
-      --bg0:#05060b;
-      --bg1:#0b0c14;
-
-      --panel: rgba(255,255,255,.06);
-      --panel2: rgba(255,255,255,.04);
-      --stroke: rgba(255,255,255,.10);
-
-      --btnDark:#1a1b23;
-      --btnDark2:#101118;
-
-      --shadow: 0 18px 44px rgba(0,0,0,.6);
-      --inset: inset 0 1px 0 rgba(255,255,255,.08), inset 0 -10px 25px rgba(0,0,0,.35);
-
-      --glowCyan: 0 0 0 2px rgba(120,200,255,.12), 0 0 26px rgba(120,200,255,.12);
-      --glowRed: 0 0 26px rgba(255,80,80,.22);
-      --glowGreen: 0 0 26px rgba(90,255,140,.18);
-
-      --radius: 18px;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 100vh;
+      background: #000;
+      font-family: Arial, sans-serif;
+      color: white;
     }
-
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; margin:0; }
-    body{
-      background: radial-gradient(1200px 700px at 50% 0%, #14162a 0%, var(--bg1) 45%, var(--bg0) 100%);
-      color:#fff;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      overflow:hidden;
-    }
-
-    .app{
-      height:100%;
-      display:flex;
-      flex-direction:column;
-      padding: 14px;
-      gap: 14px;
-    }
-
-    /* Top bar */
-    .topbar{
-      display:flex;
-      gap: 12px;
-      align-items:center;
-      justify-content:center;
-    }
-    .field{
+    #gameContainer {
       flex: 1;
-      max-width: 440px;
-      display:flex;
-      gap:10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas {
+      border: 2px solid yellow;
+      background: black;
+    }
+    #sidePanel {
+      width: 300px;
+      padding: 20px;
+      background: #222;
+      text-align: center;
+      border-left: 2px solid yellow;
+    }
+    #qrcode {
+      margin: 20px 0;
+    }
+    #qrcode img {
+      max-width: 100%;
+    }
+    #roomCode {
+      font-size: 24px;
+      font-weight: bold;
+      color: #ff0;
+      margin: 10px 0;
+    }
+    #playerList {
+      margin-top: 20px;
+      text-align: left;
+    }
+    .player-item {
+      background: #444;
       padding: 10px;
-      border-radius: var(--radius);
-      border: 1px solid var(--stroke);
-      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
-      box-shadow: var(--shadow);
-    }
-    .field input{
-      flex:1;
-      min-width: 0;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(0,0,0,.35);
-      color:#fff;
-      outline:none;
-      font-size: 16px;
-      letter-spacing: .5px;
-      text-transform: uppercase;
-    }
-    .field button{
-      padding: 10px 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.10);
-      color:#fff;
-      font-weight: 700;
-      cursor:pointer;
-      box-shadow: var(--inset);
-    }
-    .field button:active{ transform: scale(.98); }
-
-    /* Main panel */
-    .panel{
-      flex:1;
-      display:grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      align-items:center;
-      justify-items:center;
-      gap: clamp(14px, 2.5vw, 26px);
-      padding: clamp(14px, 2.5vw, 26px);
-      border-radius: 26px;
-      border: 1px solid var(--stroke);
-      background: linear-gradient(180deg, var(--panel), var(--panel2));
-      box-shadow: var(--shadow);
-      min-height: 0;
-    }
-
-    /* D-PAD (pure CSS “plus”) */
-    .dpad{
-      width: min(100vh, 42vw, 240px);
-      height: min(100vh, 42vw, 240px);
-      position:relative;
-      display:grid;
-      place-items:center;
-      filter: drop-shadow(0 18px 28px rgba(0,0,0,.55));
-      user-select:none;
-      -webkit-user-select:none;
-      touch-action:none;
-    }
-    .dpad .plus{
-      position:absolute;
-      inset: 12%;
-      border-radius: 18px;
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.22));
-      box-shadow: var(--inset), 0 0 0 1px rgba(255,255,255,.08);
-    }
-    /* vertical bar */
-    .dpad .plus::before{
-      content:"";
-      position:absolute;
-      left: 38%;
-      top: 0;
-      width: 24%;
-      height: 100%;
-      border-radius: 16px;
-      background: linear-gradient(180deg, #232535, #12131c);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.10), inset 0 -10px 18px rgba(0,0,0,.35);
-    }
-    /* horizontal bar */
-    .dpad .plus::after{
-      content:"";
-      position:absolute;
-      top: 38%;
-      left: 0;
-      height: 24%;
-      width: 100%;
-      border-radius: 16px;
-      background: linear-gradient(180deg, #232535, #12131c);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.10), inset 0 -10px 18px rgba(0,0,0,.35);
-    }
-    .dpad .center{
-      position:absolute;
-      width: 18%;
-      height: 18%;
-      border-radius: 12px;
-      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.14), rgba(0,0,0,.35));
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 0 0 1px rgba(255,255,255,.08);
-    }
-
-    /* Click/touch zones */
-    .dpad button{
-      position:absolute;
-      border:0;
-      background: transparent;
-      cursor:pointer;
-      border-radius: 18px;
-      touch-action:none;
-    }
-    .dpad .up    { top: 4%; left: 34%; width: 32%; height: 28%; }
-    .dpad .down  { bottom:4%; left:34%; width: 32%; height: 28%; }
-    .dpad .left  { left: 4%; top: 34%; width: 28%; height: 32%; }
-    .dpad .right { right:4%; top:34%; width: 28%; height: 32%; }
-
-    .dpad button:active{
-      box-shadow: var(--glowCyan);
-      background: rgba(120,200,255,.06);
-    }
-
-    /* SELECT/START block */
-    .mid{
-      width: min(46vw, 44vh, 280px);
-      padding: 14px;
-      border-radius: 22px;
-      border: 1px solid var(--stroke);
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.20));
-      box-shadow: var(--shadow);
-      display:flex;
-      flex-direction:column;
-      gap: 14px;
-      align-items:stretch;
-      justify-content:center;
-    }
-    .mid button{
-      height: clamp(52px, 10vh, 78px);
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: linear-gradient(180deg, #2a2c3d, #151626);
-      color: rgba(255,255,255,.92);
-      font-weight: 900;
-      letter-spacing: 2px;
-      font-size: clamp(18px, 3.2vw, 28px);
-      text-shadow: 0 2px 0 rgba(0,0,0,.55);
-      box-shadow: var(--inset);
-      cursor:pointer;
-    }
-    .mid button:active{
-      transform: scale(.98);
-      box-shadow: var(--inset), var(--glowCyan);
-    }
-
-    /* A/B buttons */
-    .ab{
-      width: min(46vw, 44vh, 300px);
-      height: min(30vw, 28vh, 190px);
-      position:relative;
-      display:block;
-      user-select:none;
-      -webkit-user-select:none;
-      touch-action:none;
-    }
-    .ab .btn{
-      position:absolute;
-      width: clamp(64px, 14vw, 110px);
-      height: clamp(64px, 14vw, 110px);
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,.12);
-      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.18), rgba(0,0,0,.45));
-      box-shadow: var(--shadow), var(--inset);
-      display:grid;
-      place-items:center;
-      font-weight: 1000;
-      font-size: clamp(26px, 6vw, 44px);
-      text-shadow: 0 2px 0 rgba(0,0,0,.6);
-      cursor:pointer;
-    }
-    .ab .btn.a{
-      left: 18%;
-      top: 42%;
-      color: #ff3b3b;
-      box-shadow: var(--shadow), var(--inset), var(--glowRed);
-    }
-    .ab .btn.b{
-      right: 12%;
-      top: 10%;
-      color: #63ff88;
-      box-shadow: var(--shadow), var(--inset), var(--glowGreen);
-    }
-    .ab .btn:active{
-      transform: scale(.95);
-      filter: brightness(1.08);
-    }
-
-    /* little “handle” top of A/B like in your image */
-    .ab .btn::before{
-      content:"";
-      position:absolute;
-      top:0%;
-      width: 19%;
-      height: 18%;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
-      opacity: .8;
-    }
-
-    /* Fullscreen button */
-    .full{
-      position:fixed;
-      right: 12px;
-      bottom: 12px;
-      padding: 10px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(0,0,0,.55);
-      color:#fff;
-      cursor:pointer;
-      opacity:.85;
-    }
-    .full:active{ transform: scale(.98); }
-
-    /* Make it look like your image (landscape-first) */
-    @media (max-width: 900px){
-      .panel{ grid-template-columns: 1fr 1fr 1fr; }
+      margin: 5px 0;
+      border-radius: 5px;
     }
   </style>
 </head>
-
 <body>
-  <div class="app">
-    <div class="topbar">
-      <div class="field">
-        <input id="room" placeholder="ROOM" />
-        <button id="join">JOIN</button>
-      </div>
-    </div>
-
-    <div class="panel">
-      <!-- D-pad -->
-      <div class="dpad">
-        <div class="plus"></div>
-        <div class="center"></div>
-        <button class="up" id="up" aria-label="Up"></button>
-        <button class="down" id="down" aria-label="Down"></button>
-        <button class="left" id="left" aria-label="Left"></button>
-        <button class="right" id="right" aria-label="Right"></button>
-      </div>
-
-      <!-- Select / Start -->
-      <div class="mid">
-        <button id="select">SELECT</button>
-        <button id="start">START</button>
-      </div>
-
-      <!-- A / B -->
-      <div class="ab">
-        <button class="btn a" id="a" aria-label="A">A</button>
-        <button class="btn b" id="b" aria-label="B">B</button>
-      </div>
+  <div id="gameContainer">
+    <canvas id="gameCanvas" width="560" height="620"></canvas>
+  </div>
+  
+  <div id="sidePanel">
+    <h2>Scan to Play!</h2>
+    <div id="qrcode"></div>
+    <div id="roomCode">Room: -</div>
+    <div id="playerList">
+      <h3>Players:</h3>
+      <div id="players"></div>
     </div>
   </div>
 
-  <button class="full" id="fullBtn">FULL</button>
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-
-  <script>
-    // Firebase config (yours)
-    const firebaseConfig = {
-      apiKey: "AIzaSyAjUTUVx401HS9qrTmzab27nUiLvvMkfxQ",
-      authDomain: "pacman-86c4e.firebaseapp.com",
-      databaseURL: "https://pacman-86c4e-default-rtdb.firebaseio.com",
-      projectId: "pacman-86c4e",
-      storageBucket: "pacman-86c4e.firebasestorage.app",
-      messagingSenderId: "1044337774275",
-      appId: "1:1044337774275:web:362fcd603a473c04e95c76"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    let ref = null;
-
-    // Join room
-    document.getElementById("join").onclick = () => {
-      const room = (document.getElementById("room").value || "ABCD").trim().toUpperCase();
-      ref = db.ref("rooms/" + room + "/input");
-      ref.set({ action: "connected", t: Date.now() });
-    };
-
-    function send(action){
-      if(!ref) return alert("Join first");
-      ref.set({ action, t: Date.now() });
-    }
-
-    // Tap + touch support
-    const ids = ["up","down","left","right","a","b","start","select"];
-    ids.forEach(id=>{
-      const el = document.getElementById(id);
-
-      el.addEventListener("click", ()=> send(id));
-
-      el.addEventListener("touchstart", (e)=>{
-        e.preventDefault();
-        send(id);
-      }, {passive:false});
-    });
-
-    // Fullscreen
-    function enterFullscreen(){
-      const el = document.documentElement;
-      if (el.requestFullscreen) el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      else if (el.msRequestFullscreen) el.msRequestFullscreen();
-    }
-    document.getElementById("fullBtn").onclick = enterFullscreen;
-  </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="game.js"></script>
 </body>
 </html>
