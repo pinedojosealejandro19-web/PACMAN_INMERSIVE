@@ -71,8 +71,290 @@
     </div>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
+  
+  <!-- QR Code Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="game.js"></script>
+  
+  <script>
+    // ===== FIREBASE CONFIG =====
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // ===== GAME LOGIC =====
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let gameState = {
+      pacman: { x: 280, y: 310, direction: 0, nextDirection: 0 },
+      ghosts: [
+        { x: 240, y: 210, color: '#ff0000', dx: 1, dy: 0 },
+        { x: 280, y: 210, color: '#ffb8ff', dx: -1, dy: 0 },
+        { x: 320, y: 210, color: '#00ffff', dx: 0, dy: 1 }
+      ],
+      dots: [],
+      score: 0,
+      gameRunning: false,
+      players: {},
+      roomCode: null,
+      gameId: null
+    };
+
+    // Generate unique room code
+    function generateRoomCode() {
+      return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+
+    // Initialize dots on canvas
+    function initDots() {
+      gameState.dots = [];
+      for (let x = 40; x < 540; x += 20) {
+        for (let y = 60; y < 600; y += 20) {
+          if (!isWall(x, y)) {
+            gameState.dots.push({ x, y, eaten: false });
+          }
+        }
+      }
+    }
+
+    function isWall(x, y) {
+      return (x < 20 || x > 540 || y < 40 || y > 600);
+    }
+
+    // Create a new game room in Firebase
+    function createGameRoom() {
+      gameState.roomCode = generateRoomCode();
+      gameState.gameId = db.ref('games').push().key;
+
+      const gameRef = db.ref(`games/${gameState.gameId}`);
+      
+      gameRef.set({
+        roomCode: gameState.roomCode,
+        status: 'waiting',
+        host: true,
+        createdAt: Date.now(),
+        players: {},
+        gameState: {
+          score: 0,
+          pacmanX: gameState.pacman.x,
+          pacmanY: gameState.pacman.y
+        }
+      });
+
+      // Listen for player inputs
+      gameRef.child('players').on('child_added', (snapshot) => {
+        const player = snapshot.val();
+        if (player && player.action) {
+          handlePlayerInput(player.action);
+        }
+      });
+
+      // Listen for player actions
+      gameRef.child('actions').on('child_changed', (snapshot) => {
+        const action = snapshot.val();
+        if (action) {
+          handlePlayerInput(action);
+        }
+      });
+
+      // Display QR Code
+      displayQRCode();
+      document.getElementById('roomCode').textContent = `Room: ${gameState.roomCode}`;
+      
+      // Start game loop
+      gameState.gameRunning = true;
+      initDots();
+      gameLoop();
+    }
+
+    // Display QR Code
+    function displayQRCode() {
+      const controllerUrl = `${window.location.origin}/controller.html?room=${gameState.roomCode}&gameId=${gameState.gameId}`;
+      
+      // Clear previous QR code
+      const qrcodeDiv = document.getElementById('qrcode');
+      qrcodeDiv.innerHTML = '';
+      
+      new QRCode(qrcodeDiv, {
+        text: controllerUrl,
+        width: 200,
+        height: 200
+      });
+    }
+
+    // Handle player input from controller
+    function handlePlayerInput(action) {
+      switch(action) {
+        case 'up': 
+          if (gameState.pacman.direction !== 1) gameState.pacman.nextDirection = -1;
+          break;
+        case 'down': 
+          if (gameState.pacman.direction !== -1) gameState.pacman.nextDirection = 1;
+          break;
+        case 'left': 
+          if (gameState.pacman.direction !== 2) gameState.pacman.nextDirection = -2;
+          break;
+        case 'right': 
+          if (gameState.pacman.direction !== -2) gameState.pacman.nextDirection = 2;
+          break;
+      }
+    }
+
+    // Update Pac-Man position
+    function updatePacman() {
+      const speed = 5;
+      let newX = gameState.pacman.x;
+      let newY = gameState.pacman.y;
+
+      // Try next direction first
+      if (gameState.pacman.nextDirection === -1) newY -= speed; // up
+      else if (gameState.pacman.nextDirection === 1) newY += speed; // down
+      else if (gameState.pacman.nextDirection === -2) newX -= speed; // left
+      else if (gameState.pacman.nextDirection === 2) newX += speed; // right
+
+      if (!isWall(newX, newY)) {
+        gameState.pacman.x = newX;
+        gameState.pacman.y = newY;
+        gameState.pacman.direction = gameState.pacman.nextDirection;
+      } else {
+        // Continue in current direction
+        newX = gameState.pacman.x;
+        newY = gameState.pacman.y;
+        
+        if (gameState.pacman.direction === -1) newY -= speed;
+        else if (gameState.pacman.direction === 1) newY += speed;
+        else if (gameState.pacman.direction === -2) newX -= speed;
+        else if (gameState.pacman.direction === 2) newX += speed;
+
+        if (!isWall(newX, newY)) {
+          gameState.pacman.x = newX;
+          gameState.pacman.y = newY;
+        }
+      }
+
+      // Eat dots
+      gameState.dots.forEach(dot => {
+        if (Math.abs(dot.x - gameState.pacman.x) < 10 && Math.abs(dot.y - gameState.pacman.y) < 10) {
+          if (!dot.eaten) {
+            dot.eaten = true;
+            gameState.score += 10;
+          }
+        }
+      });
+
+      // Update score in Firebase
+      if (gameState.gameId) {
+        db.ref(`games/${gameState.gameId}/gameState/score`).set(gameState.score);
+      }
+    }
+
+    // Update ghost positions (simple AI)
+    function updateGhosts() {
+      gameState.ghosts.forEach(ghost => {
+        let newX = ghost.x + ghost.dx * 2;
+        let newY = ghost.y + ghost.dy * 2;
+
+        if (isWall(newX, newY)) {
+          // Change direction randomly
+          const directions = [
+            { dx: 1, dy: 0 },
+            { dx: -1, dy: 0 },
+            { dx: 0, dy: 1 },
+            { dx: 0, dy: -1 }
+          ];
+          const newDir = directions[Math.floor(Math.random() * directions.length)];
+          ghost.dx = newDir.dx;
+          ghost.dy = newDir.dy;
+        } else {
+          ghost.x = newX;
+          ghost.y = newY;
+        }
+      });
+    }
+
+    // Draw game canvas
+    function draw() {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw border
+      ctx.strokeStyle = '#0066ff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(20, 40, 520, 560);
+
+      // Draw dots
+      ctx.fillStyle = '#ffff00';
+      gameState.dots.forEach(dot => {
+        if (!dot.eaten) {
+          ctx.beginPath();
+          ctx.arc(dot.x, dot.y, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // Draw Pac-Man
+      ctx.fillStyle = '#ffff00';
+      ctx.beginPath();
+      ctx.arc(gameState.pacman.x, gameState.pacman.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw ghosts
+      gameState.ghosts.forEach(ghost => {
+        ctx.fillStyle = ghost.color;
+        ctx.beginPath();
+        ctx.arc(ghost.x, ghost.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Ghost eyes
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(ghost.x - 3, ghost.y - 2, 2, 0, Math.PI * 2);
+        ctx.arc(ghost.x + 3, ghost.y - 2, 2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw score
+      ctx.fillStyle = '#ffff00';
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText(`Score: ${gameState.score}`, 30, 30);
+      
+      // Draw remaining dots counter
+      const dotsRemaining = gameState.dots.filter(d => !d.eaten).length;
+      ctx.fillText(`Dots: ${dotsRemaining}`, 400, 30);
+    }
+
+    // Main game loop
+    function gameLoop() {
+      updatePacman();
+      updateGhosts();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Initialize game on page load
+    window.addEventListener('load', () => {
+      createGameRoom();
+    });
+
+    // Clean up Firebase references on page unload
+    window.addEventListener('beforeunload', () => {
+      if (gameState.gameId) {
+        db.ref(`games/${gameState.gameId}`).remove();
+      }
+    });
+  </script>
 </body>
 </html>
