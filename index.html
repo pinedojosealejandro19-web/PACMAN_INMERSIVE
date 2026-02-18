@@ -1,245 +1,351 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Gamepad UI (Skinned)</title>
 
-<title>NES Gamepad</title>
+  <style>
+    :root{
+      /* Change these later if you want */
+      --panel-bg: #0b0c10;
+      --panel-border: rgba(255,255,255,.08);
+      --shadow: 0 18px 45px rgba(0,0,0,.55);
+      --gap: 18px;
 
-<!-- PWA FULLSCREEN SUPPORT -->
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="NES Gamepad">
-<link rel="apple-touch-icon" href="icon-192.png">
+      /* Sizes */
+      --pad-size: min(46vw, 42vh, 220px);
+      --btn-size: min(20vw, 18vh, 90px);
+      --mid-btn-w: min(22vw, 20vh, 110px);
+      --mid-btn-h: min(7vw, 6vh, 42px);
+    }
 
-<style>
-html,body{
-  margin:0;
-  height:100%;
-  background:#111;
-  color:#fff;
-  font-family:system-ui;
-  overflow:hidden;
-}
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; margin:0; }
+    body{
+      background: radial-gradient(1200px 700px at 50% 10%, #141625 0%, #070812 55%, #05060b 100%);
+      color:#fff;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      overflow:hidden;
+    }
 
-/* rotate notice */
-.rotate{
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:#000;
-  z-index:10;
-  font-size:20px;
-  text-align:center;
-  padding:20px;
-}
-@media (orientation: landscape){
-  .rotate{display:none;}
-}
+    /* Optional rotate overlay */
+    .rotate{
+      position:fixed; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      background: rgba(0,0,0,.92);
+      z-index:50;
+      padding:18px;
+      text-align:center;
+      font-size:18px;
+      line-height:1.25;
+    }
+    @media (orientation: landscape){
+      .rotate{ display:none; }
+    }
 
-/* main layout */
-.app{
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-}
+    .app{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      padding: 14px;
+      gap: 12px;
+    }
 
-/* top bar */
-.top{
-  display:flex;
-  gap:10px;
-  padding:10px;
-}
-input,button{
-  font-size:16px;
-  padding:10px;
-  border-radius:10px;
-  border:none;
-}
+    .topbar{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      justify-content:center;
+    }
 
-/* controller grid */
-.pad{
-  flex:1;
-  display:grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  align-items:center;
-  justify-items:center;
-}
+    .topbar input{
+      width: min(48vw, 260px);
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+      outline: none;
+      background: rgba(0,0,0,.35);
+      color:#fff;
+      font-size:16px;
+    }
 
-/* D-pad responsive */
-.dpad{
-  width:min(40vh, 40vw);
-  height:min(40vh, 40vw);
-  position:relative;
-}
-.dpad button{
-  position:absolute;
-  background:#333;
-  color:#fff;
-  border:none;
-  font-size:3vh;
-  border-radius:1vh;
-}
-.up{
-  background-image: url("https://raw.githubusercontent.com/pinedojosealejandro19/GAMEPAD_QR/main/buttons%20sprites/D-PAD.png");
-  background-size: 80% 80%;
-  background-repeat: no-repeat;
-  background-position: center;
-  "
-}
+    .topbar button{
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,.08);
+      color:#fff;
+      font-size:16px;
+      cursor:pointer;
+    }
+    .topbar button:active{ transform: scale(.98); }
 
-.down{bottom:0;left:30%;width:40%;height:25%;}
-.left{left:0;top:30%;width:25%;height:40%;}
-.right{right:0;top:30%;width:25%;height:40%;}
+    .panel{
+      flex:1;
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      align-items:center;
+      justify-items:center;
+      gap: var(--gap);
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid var(--panel-border);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+      min-height: 0;
+    }
 
-/* Start / Select */
-.mid{
-  display:flex;
-  gap:3vh;
-}
-.mid button{
-  width:min(18vh,18vw);
-  height:min(6vh,6vw);
-  background:#555;
-  color:#fff;
-  border-radius:3vh;
-}
+    /* ---------- D-PAD (skinned) ---------- */
+    .dpad{
+      width: var(--pad-size);
+      height: var(--pad-size);
+      position:relative;
+      display:grid;
+      place-items:center;
+      user-select:none;
+      -webkit-user-select:none;
+      touch-action: none;
+    }
 
-/* A / B always visible */
-.ab{
-  display:flex;
-  gap:4vh;
-  align-items:center;
-  justify-content:center;
-}
-.ab button{
-  width:min(14vh,14vw);
-  height:min(14vh,14vw);
-  border-radius:50%;
-  background:#e11d2e;
-  color:#fff;
-  font-size:4vh;
-  border:none;
-}
+    /* base D-pad skin image */
+    .dpad::before{
+      content:"";
+      position:absolute; inset:0;
+      background: url("assets/dpad.png") center/contain no-repeat;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.55));
+      opacity: 1;
+      pointer-events:none;
+    }
 
-/* fullscreen button */
-.fullscreen-btn{
-  position:fixed;
-  bottom:10px;
-  right:10px;
-  padding:10px 14px;
-  border-radius:10px;
-  border:none;
-  background:#000;
-  color:#fff;
-  z-index:20;
-  opacity:0.7;
-}
-</style>
+    .dpad button{
+      position:absolute;
+      border:0;
+      background: transparent;
+      cursor:pointer;
+      width: 36%;
+      height: 30%;
+      border-radius: 14%;
+      touch-action:none;
+    }
+
+    /* Invisible hit zones positioned like a classic D-pad */
+    .dpad .up    { top: 3%;  left: 32%; }
+    .dpad .down  { bottom:3%;left: 32%; }
+    .dpad .left  { left:3%;  top: 32%; width:30%; height:36%; }
+    .dpad .right { right:3%; top: 32%; width:30%; height:36%; }
+
+    /* Press feedback (optional glow) */
+    .dpad button:active{
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(120,200,255,.22) inset, 0 0 18px rgba(120,200,255,.18);
+    }
+
+    /* ---------- MIDDLE (Start/Select) ---------- */
+    .mid{
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+      align-items:center;
+      justify-content:center;
+      user-select:none;
+      -webkit-user-select:none;
+    }
+    .mid button{
+      width: var(--mid-btn-w);
+      height: var(--mid-btn-h);
+      border-radius: 999px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255,255,255,.07);
+      color:#fff;
+      font-weight: 600;
+      letter-spacing: .3px;
+      cursor:pointer;
+    }
+    .mid button:active{ transform: scale(.98); }
+
+    /* ---------- A/B (skinned) ---------- */
+    .ab{
+      position:relative;
+      width: min(44vw, 40vh, 240px);
+      height: min(30vw, 28vh, 170px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      user-select:none;
+      -webkit-user-select:none;
+      touch-action:none;
+    }
+
+    .ab .btn{
+      width: var(--btn-size);
+      height: var(--btn-size);
+      border:0;
+      border-radius: 50%;
+      background: transparent;
+      cursor:pointer;
+      position:absolute;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.55));
+      touch-action:none;
+    }
+
+    /* A and B skin images */
+    .ab .btn.a{
+      right: 0%;
+      top: 35%;
+      background: url("assets/btn_a.png") center/contain no-repeat;
+    }
+    .ab .btn.b{
+      left: 20%;
+      top: 10%;
+      background: url("assets/btn_b.png") center/contain no-repeat;
+    }
+
+    .ab .btn:active{
+      transform: scale(.95);
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.55)) brightness(1.08);
+    }
+
+    /* Fullscreen button */
+    .fullscreen-btn{
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      z-index: 60;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+      background: rgba(0,0,0,.55);
+      color:#fff;
+      cursor:pointer;
+      opacity:.85;
+    }
+    .fullscreen-btn:active{ transform: scale(.98); }
+
+    /* Small helper text */
+    .hint{
+      font-size: 12px;
+      opacity: .7;
+      text-align:center;
+      margin-top: -6px;
+    }
+  </style>
 </head>
 
 <body>
+  <div class="rotate">Rotate your phone to landscape to use the controller.</div>
 
-<div class="rotate">Rotate phone to landscape for the controller</div>
+  <div class="app">
+    <div class="topbar">
+      <input id="room" placeholder="ROOM (ABCD)" />
+      <button id="join">JOIN</button>
+    </div>
 
-<div class="app">
+    <div class="hint">Skin paths used: <b>assets/dpad.png</b>, <b>assets/btn_a.png</b>, <b>assets/btn_b.png</b></div>
 
-  <div class="top">
-    <input id="room" placeholder="ROOM">
-    <button id="join">JOIN</button>
+    <div class="panel">
+      <!-- D-PAD -->
+      <div class="dpad" aria-label="D-pad">
+        <button class="up" id="up" data-action="up" aria-label="Up"></button>
+        <button class="down" id="down" data-action="down" aria-label="Down"></button>
+        <button class="left" id="left" data-action="left" aria-label="Left"></button>
+        <button class="right" id="right" data-action="right" aria-label="Right"></button>
+      </div>
+
+      <!-- START / SELECT -->
+      <div class="mid" aria-label="Start/Select">
+        <button id="select" data-action="select">SELECT</button>
+        <button id="start" data-action="start">START</button>
+      </div>
+
+      <!-- A / B -->
+      <div class="ab" aria-label="A and B buttons">
+        <button class="btn b" id="b" data-action="b" aria-label="B"></button>
+        <button class="btn a" id="a" data-action="a" aria-label="A"></button>
+      </div>
+    </div>
   </div>
 
-  <div class="pad">
+  <button class="fullscreen-btn" id="fullBtn">FULL</button>
 
-    <!-- D-PAD -->
-    <div class="dpad">
-      <button id="up" class="up"></button>
-      <button id="down" class="down">▼</button>
-      <button id="left" class="left">◀</button>
-      <button id="right" class="right">▶</button>
-    </div>
+  <!-- OPTIONAL: Firebase (Realtime Database) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 
-    <!-- START SELECT -->
-    <div class="mid">
-      <button id="select">SELECT</button>
-      <button id="start">START</button>
-    </div>
+  <script>
+    // If you don't want Firebase yet, set USE_FIREBASE = false.
+    const USE_FIREBASE = true;
 
-    <!-- A B -->
-    <div class="ab">
-      <button id="b">B</button>
-      <button id="a">A</button>
-    </div>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAjUTUVx401HS9qrTmzab27nUiLvvMkfxQ",
+      authDomain: "pacman-86c4e.firebaseapp.com",
+      databaseURL: "https://pacman-86c4e-default-rtdb.firebaseio.com",
+      projectId: "pacman-86c4e",
+      storageBucket: "pacman-86c4e.firebasestorage.app",
+      messagingSenderId: "1044337774275",
+      appId: "1:1044337774275:web:362fcd603a473c04e95c76"
+    };
 
-  </div>
-</div>
+    let db = null;
+    let ref = null;
 
-<button class="fullscreen-btn" onclick="enterFullscreen()">FULL</button>
+    if (USE_FIREBASE) {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+    }
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+    // Join room
+    document.getElementById("join").onclick = () => {
+      const room = (document.getElementById("room").value || "ABCD").trim().toUpperCase();
 
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyAjUTUVx401HS9qrTmzab27nUiLvvMkfxQ",
-  authDomain: "pacman-86c4e.firebaseapp.com",
-  databaseURL: "https://pacman-86c4e-default-rtdb.firebaseio.com",
-  projectId: "pacman-86c4e",
-  storageBucket: "pacman-86c4e.firebasestorage.app",
-  messagingSenderId: "1044337774275",
-  appId: "1:1044337774275:web:362fcd603a473c04e95c76"
-};
+      if (!USE_FIREBASE) {
+        alert("Joined locally (no Firebase). Room: " + room);
+        return;
+      }
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+      ref = db.ref("rooms/" + room + "/input");
+      ref.set({ action: "connected", t: Date.now() });
+    };
 
-let ref=null;
+    function send(action) {
+      if (!USE_FIREBASE) {
+        console.log("send:", action);
+        return;
+      }
+      if (!ref) return alert("Join first");
+      ref.set({ action, t: Date.now() });
+    }
 
-/* join room */
-document.getElementById("join").onclick=()=>{
-  const room=(document.getElementById("room").value||"ABCD").toUpperCase();
-  ref=db.ref("rooms/"+room+"/input");
-  ref.set({action:"connected",t:Date.now()});
-};
+    // Press handling (tap + touch)
+    function bindButton(id) {
+      const el = document.getElementById(id);
 
-/* send input */
-function send(a){
-  if(!ref)return alert("Join first");
-  ref.set({action:a,t:Date.now()});
-}
+      // click (desktop)
+      el.addEventListener("click", () => send(id));
 
-/* buttons */
-["up","down","left","right","a","b","start","select"].forEach(id=>{
-  const el=document.getElementById(id);
-  el.onclick=()=>send(id);
-  el.addEventListener("touchstart",e=>{
-    e.preventDefault();
-    send(id);
-  },{passive:false});
-});
+      // touch (mobile)
+      el.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        send(id);
+      }, { passive: false });
+    }
 
-/* FULLSCREEN */
-function enterFullscreen(){
-  const el=document.documentElement;
-  if(el.requestFullscreen) el.requestFullscreen();
-  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-  else if(el.msRequestFullscreen) el.msRequestFullscreen();
-}
+    ["up","down","left","right","a","b","start","select"].forEach(bindButton);
 
-/* auto fullscreen on first tap (Android) */
-document.body.addEventListener("touchstart",()=>{
-  enterFullscreen();
-},{once:true});
-</script>
+    // Fullscreen
+    function enterFullscreen() {
+      const el = document.documentElement;
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.msRequestFullscreen) el.msRequestFullscreen();
+    }
+    document.getElementById("fullBtn").onclick = enterFullscreen;
 
+    // Optional: auto fullscreen on first tap (some Android browsers)
+    document.body.addEventListener("touchstart", () => {
+      // comment out if you don't want it
+      // enterFullscreen();
+    }, { once: true });
+  </script>
 </body>
 </html>
-
-
-
-
-
