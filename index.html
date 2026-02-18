@@ -83,7 +83,13 @@ input,button{
   font-size:3vh;
   border-radius:1vh;
 }
-.up{top:0;left:30%;width:40%;height:25%;}
+.up{
+  background-image: url("./buttons%20sprites/BUTTON%20B.png");
+  background-size: 80% 80%;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
 .down{bottom:0;left:30%;width:40%;height:25%;}
 .left{left:0;top:30%;width:25%;height:40%;}
 .right{right:0;top:30%;width:25%;height:40%;}
@@ -149,10 +155,7 @@ input,button{
 
     <!-- D-PAD -->
     <div class="dpad">
-      <button id="up" class="up"  background-image: url("buttons sprites/BUTTON B.png");>
-
-      
-      </button>
+      <button id="up" class="up"></button>
       <button id="down" class="down">▼</button>
       <button id="left" class="left">◀</button>
       <button id="right" class="right">▶</button>
@@ -234,5 +237,6 @@ document.body.addEventListener("touchstart",()=>{
 
 </body>
 </html>
+
 
 
