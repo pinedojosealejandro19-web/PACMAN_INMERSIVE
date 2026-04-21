@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>INMERSIVE PACMAN project</title>
+  <style>
+    body {
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    canvas {
+      border: 2px solid #ffffff00;
+      background-color: #02111f;
+      image-rendering: pixelated;
+    }
+
+    /* --- NEW QR CODE STYLE --- */
+    .qr-overlay {
+      position: fixed;
+      top: 14px;
+      right: 14px; /* Placed in the top-right corner */
+      z-index: 30;
+      width: 150px; /* Adjust size as needed */
+      height: 150px;
+      border: 4px solid white;
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    .hud {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      z-index: 20;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: white;
+      font-family: system-ui, Arial, sans-serif;
+      font-size: 14px;
+    }
+
+    /* ... rest of your HUD styles ... */
+  </style>
+</head>
+<body>
+<div class="qr-container" style="
+    position: fixed;
+    top: 100px;
+    right: 150px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;">
+    
+    <img src="Images/BGS/QR CODE GAMEPAD.jpg" alt="Gamepad QR" style="
+        width: 300px; 
+        height: 300px; 
+        padding: 8px;
+        pointer-events: auto;
+        image-rendering: auto;">
+
+    <span style="
+        color: white;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        text-shadow: 2px 2px 4px #000;
+        background: rgba(0,0,0,0.5);
+        padding: 2px 8px;
+        border-radius: 4px;">
+        Scan to Play
+    </span>
+</div>
+  
+
+  <div class="hud">
+    <input id="roomInput" placeholder="ROOM (ABCD)" maxlength="12" />
+    <button id="connectRoomBtn">Connect</button>
+    <span id="roomStatus" class="status">Waiting…</span>
+  </div>
+
+  <canvas id="game"></canvas>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+
+  <script src="game.js"></script>
+</body>
+</html>
