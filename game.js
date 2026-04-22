@@ -82,14 +82,14 @@ roomInputEl.addEventListener("keydown", (e) => {
 // RESOURCES
 // ======================================================
 const mapTexture = new Image();
-mapTexture.src = "Images/BGS/BG OBSTACLES.png";
+mapTexture.src = "BGS/BG OBSTACLES.png";
 
 const pacmanSprites = [];
 const spriteNames = ["PACMAN 1.png", "PACMAN 2.png", "PACMAN 3.png"];
 
 spriteNames.forEach((name) => {
   const img = new Image();
-  img.src = `Images/sprites/${name}`;
+  img.src = `Sprites/${name}`;
   pacmanSprites.push(img);
 });
 
