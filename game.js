@@ -76,12 +76,12 @@ const SPEED_CELLS_PER_SECOND = 8;
 let TILE_SIZE = 0;
 
 const mapTexture = new Image();
-mapTexture.src = "BGS/BG OBSTACLES.png";
+mapTexture.src = "Images/BGS/BG OBSTACLES.png";
 
 const pacmanSprites = [];
 ["PACMAN 1.png", "PACMAN 2.png", "PACMAN 3.png"].forEach((name) => {
   const img = new Image();
-  img.src = `Sprites/${name}`;
+  img.src = `Images/sprites/${name}`;
   pacmanSprites.push(img);
 });
 
