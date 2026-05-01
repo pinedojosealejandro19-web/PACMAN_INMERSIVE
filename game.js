@@ -118,7 +118,7 @@ const GHOST_RESPAWN_DELAY = 3;
 let TILE_SIZE = 0;
 
 const mapTexture = new Image();
-mapTexture.src = "Images/BGS/bg-map.png";
+mapTexture.src = "BGS/bg-map.png";
 
 mapTexture.onload = () => {
   console.log("BG loaded:", mapTexture.src, mapTexture.width, mapTexture.height);
@@ -129,13 +129,13 @@ mapTexture.onerror = () => {
 };
 
 const bigDotTexture = new Image();
-bigDotTexture.src = "Images/sprites/BIG DOT.png";
+bigDotTexture.src = "Sprites/BIG DOT.png";
 
 const pacmanSprites = [];
 
 ["PACMAN 1.png", "PACMAN 2.png", "PACMAN 3.png"].forEach((name) => {
   const img = new Image();
-  img.src = `Images/sprites/${name}`;
+  img.src = `Sprites/${name}`;
   pacmanSprites.push(img);
 });
 
@@ -143,7 +143,7 @@ const deathSprites = [];
 
 for (let i = 1; i <= 11; i++) {
   const img = new Image();
-  img.src = `Images/sprites/PACMAN DEAD ${i}.png`;
+  img.src = `Sprites/PACMAN DEAD ${i}.png`;
   deathSprites.push(img);
 }
 
@@ -156,10 +156,10 @@ const ghostSprites = {
 
 function loadGhostFrames(direction, fileA, fileB) {
   const imgA = new Image();
-  imgA.src = `Images/sprites/${fileA}`;
+  imgA.src = `Sprites/${fileA}`;
 
   const imgB = new Image();
-  imgB.src = `Images/sprites/${fileB}`;
+  imgB.src = `Sprites/${fileB}`;
 
   ghostSprites[direction].push(imgB, imgA);
 }
@@ -178,7 +178,7 @@ const vulnerableSprites = [];
   "VULNERABLE D.png"
 ].forEach((name) => {
   const img = new Image();
-  img.src = `Images/sprites/${name}`;
+  img.src = `Sprites/${name}`;
   vulnerableSprites.push(img);
 });
 
