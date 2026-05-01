@@ -2,108 +2,170 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>INMERSIVE PACMAN project</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>INMERSIVE PACMAN</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
   <style>
     body {
-      background-color: #000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
       margin: 0;
+      background: black;
       overflow: hidden;
-      position: relative;
+      font-family: "Press Start 2P", monospace;
     }
- 
 
     canvas {
-      border: 0px solid #ffffff00;
-      background-color: #ffffff00;
+      position: fixed;
+      inset: 0;
+      margin: auto;
+      background: transparent;
       image-rendering: pixelated;
+      z-index: 5;
     }
 
-    /* --- NEW QR CODE STYLE --- */
-    .qr-overlay {
+    .hidden-ui {
+      display: none;
+    }
+
+    .qr-container {
       position: fixed;
-      top: 14px;
-      right: 14px; /* Placed in the top-right corner */
+      top: 20px;
+      right: 20px;
       z-index: 30;
-      width: 150px; /* Adjust size as needed */
-      height: 150px;
-      border: 4px solid white;
-      border-radius: 8px;
-      background: white;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    }
-
-    .hud {
-      position: fixed;
-      top: 14px;
-      left: 14px;
-      z-index: 20;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-      background: rgba(0, 0, 0, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0);
-      border-radius: 12px;
-      padding: 10px 12px;
+      text-align: center;
       color: white;
-      font-family: system-ui, Arial, sans-serif;
-      font-size: 14px;
+      font-size: 12px;
     }
 
-    /* ... rest of your HUD styles ... */
+    #qrcode {
+      background: white;
+      padding: 8px;
+    }
+
+    .bottom-hud {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 8vh;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      color: white;
+      font-size: 20px;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .hud-value {
+      margin-top: 6px;
+      color: yellow;
+    }
+
+    .lives {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .life-icon {
+      width: 22px;
+      height: 22px;
+      background: yellow;
+      border-radius: 50%;
+      clip-path: polygon(0 0, 100% 50%, 0 100%, 0 65%, 55% 50%, 0 35%);
+      transform: rotate(180deg);
+    }
+
+    #debugError {
+      position: fixed;
+      bottom: 90px;
+      left: 20px;
+      z-index: 9999;
+      color: red;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
+
 <body>
-<div class="qr-container" style="
-    position: fixed;
-    top: 40px;
-    right: 150px;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    pointer-events: none;">
-  
-    <img src="BGS/qr-gamepad.jpg" alt="Gamepad QR" style="
-        width: 300px; 
-        height: 300px; 
-        padding: 8px;
-        pointer-events: auto;
-        image-rendering: auto;">
 
-    <span style="
-        color: white;
-        font-family: 'Courier New', monospace;
-        font-size: 11px;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        text-shadow: 2px 2px 4px #000;
-        background: rgba(0,0,0,0.5);
-        padding: 2px 8px;
-        border-radius: 4px;">
-        Scan to Play
-    </span>
-</div>
-  
-
-  <div class="hud">
-    <input id="roomInput" placeholder="ROOM (ABCD)" maxlength="12" />
+  <div class="hidden-ui">
+    <input id="roomInput" value="ABCD" maxlength="12" />
     <button id="connectRoomBtn">Connect</button>
-    <span id="roomStatus" class="status">Waiting…</span>
+    <span id="roomStatus">Waiting…</span>
   </div>
 
+
   <canvas id="game"></canvas>
+
+  <div class="bottom-hud">
+    <div>
+      SALA
+      <div id="hudRoom" class="hud-value">ABCD</div>
+    </div>
+
+    <div>
+      VIDAS
+      <div id="hudLives" class="lives"></div>
+    </div>
+
+    <div>
+      PUNTOS
+      <div id="hudScore" class="hud-value">0</div>
+    </div>
+
+    <div>
+      RECORD
+      <div id="hudHighScore" class="hud-value">0</div>
+    </div>
+  </div>
+
+  <div id="debugError"></div>
+
+  <script>
+    window.onerror = function(message, source, lineno, colno) {
+      document.getElementById("debugError").textContent =
+        "JS ERROR:\n" + message + "\nLine: " + lineno + ":" + colno;
+    };
+  </script>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 
-  <script src="game.js"></script>
+  <script src="game.js?v=1001"></script>
+
+  <script>
+    window.addEventListener("load", () => {
+      const ROOM = "ABCD";
+
+      document.getElementById("roomInput").value = ROOM;
+      document.getElementById("hudRoom").textContent = ROOM;
+
+      if (typeof connectRoom === "function") {
+        connectRoom();
+      }
+
+      const controllerURL =
+        window.location.origin +
+        window.location.pathname.replace("index.html", "") +
+        "controller.html?room=" +
+        ROOM;
+
+      if (typeof QRCode !== "undefined") {
+        new QRCode(document.getElementById("qrcode"), {
+          text: controllerURL,
+          width: 140,
+          height: 140
+        });
+      }
+
+      console.log("Controller URL:", controllerURL);
+    });
+  </script>
+
 </body>
 </html>
