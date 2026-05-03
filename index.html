@@ -795,30 +795,9 @@ function setupGameSoundUnlockers() {
 }
 
 
-// Debug/testing mode. When ON, Pac-Man cannot die from touching ghosts.
+// Production mode: invincibility is disabled.
 let invincibleMode = false;
-let invincibleButton = null;
 
-function updateInvincibleButtonLabel() {
-  if (!invincibleButton) return;
-
-  invincibleButton.textContent = invincibleMode
-    ? "INVINCIBLE: ON"
-    : "INVINCIBLE: OFF";
-
-  invincibleButton.style.background = invincibleMode ? "#004d00" : "black";
-}
-
-function toggleInvincibleMode() {
-  invincibleMode = !invincibleMode;
-  updateInvincibleButtonLabel();
-
-  if (roomStatus) {
-    roomStatus.textContent = invincibleMode
-      ? "Invincible mode ON."
-      : "Invincible mode OFF.";
-  }
-}
 
 /* ==========================
    ENDING SEQUENCE
@@ -1103,186 +1082,6 @@ function updateGhostPointPopups(dt) {
   ghostPointPopups = ghostPointPopups.filter((popup) => popup.age < popup.duration);
 }
 
-/* =========================================================
-   TEMPORARY DEBUG MENU - SAFE TO DELETE LATER
-   ---------------------------------------------------------
-   To remove the testing menu completely, delete everything
-   from this comment down to:
-   END TEMPORARY DEBUG MENU
-========================================================= */
-
-function clearAllDotsAndStartEnding() {
-  if (endingStarted) return;
-
-  dots.forEach((dot) => {
-    dot.active = false;
-  });
-
-  roomStatus.textContent = "Test win activated.";
-  draw();
-  startEndingSequence();
-}
-
-function restartGameNow() {
-  endingStarted = false;
-  gameFrozen = false;
-  gameOverActive = false;
-  gameOverTimer = 0;
-  blackoutOverlay.style.opacity = "0";
-  resetGame();
-  showStartScreen();
-  roomStatus.textContent = "Game reset.";
-}
-
-function forceReleaseCageGhosts() {
-  allGhosts.forEach((g) => {
-    if (g.startsInsideCage && !g.isEaten && !g.isReleased) {
-      g.releaseTimer = 0;
-      g.cageMode = "leavingCage";
-      g.cageExitStep = 0;
-    }
-  });
-
-  roomStatus.textContent = "Cage ghosts released.";
-}
-
-function triggerVulnerableMode() {
-  activateGhostVulnerable();
-  roomStatus.textContent = "Vulnerable mode activated.";
-}
-
-function triggerGameOverTest() {
-  lives = 0;
-  updateHUD();
-  startGameOverSequence();
-}
-
-function createDebugButton(label, onClick) {
-  const btn = document.createElement("button");
-  btn.textContent = label;
-  btn.type = "button";
-
-  btn.style.padding = "10px 14px";
-  btn.style.border = "2px solid white";
-  btn.style.borderRadius = "8px";
-  btn.style.background = "black";
-  btn.style.color = "white";
-  btn.style.fontWeight = "bold";
-  btn.style.cursor = "pointer";
-  btn.style.fontFamily = "'Press Start 2P', monospace";
-  btn.style.fontSize = "10px";
-  btn.style.whiteSpace = "nowrap";
-
-  btn.addEventListener("mouseenter", () => {
-    btn.style.background = "white";
-    btn.style.color = "black";
-  });
-
-  btn.addEventListener("mouseleave", () => {
-    btn.style.background = "black";
-    btn.style.color = "white";
-  });
-
-  btn.addEventListener("click", onClick);
-  return btn;
-}
-
-function createDebugButtons() {
-  const debugPanel = document.createElement("div");
-  debugPanel.id = "debugMenuPanel";
-
-  debugPanel.style.position = "fixed";
-  debugPanel.style.left = "14px";
-  debugPanel.style.bottom = "14px";
-  debugPanel.style.zIndex = "999998";
-  debugPanel.style.display = "flex";
-  debugPanel.style.flexDirection = "column";
-  debugPanel.style.alignItems = "flex-start";
-  debugPanel.style.gap = "8px";
-  debugPanel.style.fontFamily = "'Press Start 2P', monospace";
-  debugPanel.style.pointerEvents = "auto";
-
-  const toggleBtn = document.createElement("button");
-  toggleBtn.id = "debugMenuToggle";
-  toggleBtn.textContent = "TOOLS +";
-  toggleBtn.type = "button";
-
-  toggleBtn.style.padding = "10px 14px";
-  toggleBtn.style.border = "2px solid white";
-  toggleBtn.style.borderRadius = "8px";
-  toggleBtn.style.background = "black";
-  toggleBtn.style.color = "white";
-  toggleBtn.style.fontWeight = "bold";
-  toggleBtn.style.cursor = "pointer";
-  toggleBtn.style.fontFamily = "'Press Start 2P', monospace";
-  toggleBtn.style.fontSize = "10px";
-
-  const buttonsWrap = document.createElement("div");
-  buttonsWrap.id = "debugMenuButtons";
-  buttonsWrap.style.display = "none";
-  buttonsWrap.style.flexWrap = "wrap";
-  buttonsWrap.style.gap = "8px";
-  buttonsWrap.style.maxWidth = "620px";
-  buttonsWrap.style.padding = "10px";
-  buttonsWrap.style.border = "2px solid white";
-  buttonsWrap.style.borderRadius = "10px";
-  buttonsWrap.style.background = "rgba(0, 0, 0, 0.88)";
-
-  let debugMenuOpen = false;
-
-  function setDebugMenuOpen(open) {
-    debugMenuOpen = open;
-    buttonsWrap.style.display = debugMenuOpen ? "flex" : "none";
-    toggleBtn.textContent = debugMenuOpen ? "TOOLS -" : "TOOLS +";
-  }
-
-  toggleBtn.addEventListener("click", () => {
-    setDebugMenuOpen(!debugMenuOpen);
-  });
-
-  const testWinBtn = createDebugButton("TEST WIN", clearAllDotsAndStartEnding);
-
-  const invincibleBtn = createDebugButton("INVINCIBLE: OFF", () => {
-    toggleInvincibleMode();
-    invincibleBtn.textContent = invincibleMode
-      ? "INVINCIBLE: ON"
-      : "INVINCIBLE: OFF";
-
-    invincibleBtn.style.background = invincibleMode ? "#00a000" : "black";
-    invincibleBtn.style.color = "white";
-  });
-
-  const releaseBtn = createDebugButton("RELEASE GHOSTS", forceReleaseCageGhosts);
-  const vulnerableBtn = createDebugButton("VULNERABLE", triggerVulnerableMode);
-  const gameOverBtn = createDebugButton("GAME OVER", triggerGameOverTest);
-  const resetBtn = createDebugButton("RESET", restartGameNow);
-
-  buttonsWrap.appendChild(testWinBtn);
-  buttonsWrap.appendChild(invincibleBtn);
-  buttonsWrap.appendChild(releaseBtn);
-  buttonsWrap.appendChild(vulnerableBtn);
-  buttonsWrap.appendChild(gameOverBtn);
-  buttonsWrap.appendChild(resetBtn);
-
-  debugPanel.appendChild(toggleBtn);
-  debugPanel.appendChild(buttonsWrap);
-  document.body.appendChild(debugPanel);
-
-  // Start collapsed.
-  setDebugMenuOpen(false);
-}
-
-window.clearAllDotsAndStartEnding = clearAllDotsAndStartEnding;
-window.toggleInvincibleMode = toggleInvincibleMode;
-window.forceReleaseCageGhosts = forceReleaseCageGhosts;
-window.triggerVulnerableMode = triggerVulnerableMode;
-window.triggerGameOverTest = triggerGameOverTest;
-
-/* ================= END TEMPORARY DEBUG MENU ================= */
-
-window.toggleInvincibleMode = toggleInvincibleMode;
-window.forceReleaseCageGhosts = forceReleaseCageGhosts;
-window.triggerVulnerableMode = triggerVulnerableMode;
 
 // Hard HUD lives fix.
 // The old .life-icon class drew the yellow < shape.
@@ -2154,7 +1953,6 @@ window.addEventListener("keydown", (e) => {
   else if (key === "s" || key === "arrowdown") setQueuedDirection("down");
   else if (key === "a" || key === "arrowleft") setQueuedDirection("left");
   else if (key === "d" || key === "arrowright") setQueuedDirection("right");
-  else if (key === "i") toggleInvincibleMode();
 });
 
 /* ==========================
@@ -3770,7 +3568,6 @@ function update(time) {
 GameSound.init();
 setupGameSoundUnlockers();
 eatDotAt(player.col, player.row);
-createDebugButtons();
 updateHUD();
 setupScreenWakeLock();
 
