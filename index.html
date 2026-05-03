@@ -1350,7 +1350,7 @@ const continueMapTexture = new Image();
 continueMapTexture.src = "Images/BGS/bg-map-continue.png";
 
 const bigDotTexture = new Image();
-bigDotTexture.src = "Images/sprites/BIG DOT.png";
+bigDotTexture.src = "Images/Sprites/BIG DOT.png";
 
 const pacmanSprites = [];
 ["PACMAN 1.png", "PACMAN 2.png", "PACMAN 3.png"].forEach((name) => {
@@ -1362,7 +1362,7 @@ const pacmanSprites = [];
 const deathSprites = [];
 for (let i = 1; i <= 11; i++) {
   const img = new Image();
-  img.src = `Images/sprites/PACMAN DEAD ${i}.png`;
+  img.src = `Images/Sprites/PACMAN DEAD ${i}.png`;
   deathSprites.push(img);
 }
 
@@ -1378,7 +1378,7 @@ function loadFrames(spriteSet, direction, fileA, fileB) {
   imgA.src = `Images/sprites/${fileA}`;
 
   const imgB = new Image();
-  imgB.src = `Images/sprites/${fileB}`;
+  imgB.src = `Images/Sprites/${fileB}`;
 
   spriteSet[direction].push(imgB, imgA);
 }
@@ -1422,7 +1422,7 @@ const vulnerableSprites = [];
   "VULNERABLE D.png"
 ].forEach((name) => {
   const img = new Image();
-  img.src = `Images/sprites/${name}`;
+  img.src = `Images/Sprites/${name}`;
   vulnerableSprites.push(img);
 });
 
@@ -1434,10 +1434,10 @@ const eatenGhostEyeSprites = {
   right: new Image()
 };
 
-eatenGhostEyeSprites.up.src = "Images/sprites/EYES UP.png";
-eatenGhostEyeSprites.down.src = "Images/sprites/EYES DOWN.png";
-eatenGhostEyeSprites.left.src = "Images/sprites/EYES LEFT.png";
-eatenGhostEyeSprites.right.src = "Images/sprites/EYES RIGHT.png";
+eatenGhostEyeSprites.up.src = "Images/Sprites/EYES UP.png";
+eatenGhostEyeSprites.down.src = "Images/Sprites/EYES DOWN.png";
+eatenGhostEyeSprites.left.src = "Images/Sprites/EYES LEFT.png";
+eatenGhostEyeSprites.right.src = "Images/Sprites/EYES RIGHT.png";
 
 
 /* EATEN / EYES GHOST SPRITES */
@@ -1448,10 +1448,10 @@ const eatenGhostSprites = {
   right: new Image()
 };
 
-eatenGhostSprites.up.src = "Images/sprites/EYES UP.png";
-eatenGhostSprites.down.src = "Images/sprites/EYES DOWN.png";
-eatenGhostSprites.left.src = "Images/sprites/EYES LEFT.png";
-eatenGhostSprites.right.src = "Images/sprites/EYES RIGHT.png";
+eatenGhostSprites.up.src = "Images/Sprites/EYES UP.png";
+eatenGhostSprites.down.src = "Images/Sprites/EYES DOWN.png";
+eatenGhostSprites.left.src = "Images/Sprites/EYES LEFT.png";
+eatenGhostSprites.right.src = "Images/Sprites/EYES RIGHT.png";
 
 const EATEN_GHOST_SPEED_MULTIPLIER = 2.0;
 const EATEN_GHOST_CAGE_WAIT = 4;
@@ -1467,10 +1467,10 @@ const ghostScoreSprites = {
   800: new Image()
 };
 
-ghostScoreSprites[200].src = "Images/sprites/200-POINTS.png";
-ghostScoreSprites[400].src = "Images/sprites/400-POINTS.png";
-ghostScoreSprites[600].src = "Images/sprites/600-POINTS.png";
-ghostScoreSprites[800].src = "Images/sprites/800-POINTS.png";
+ghostScoreSprites[200].src = "Images/Sprites/200-POINTS.png";
+ghostScoreSprites[400].src = "Images/Sprites/400-POINTS.png";
+ghostScoreSprites[600].src = "Images/Sprites/600-POINTS.png";
+ghostScoreSprites[800].src = "Images/Sprites/800-POINTS.png";
 
 let ghostComboTimer = 0;
 let ghostComboCount = 0;
