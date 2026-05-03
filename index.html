@@ -112,6 +112,34 @@
       color: white;
     }
 
+    .hud-room-input {
+      width: 118px;
+      max-width: 100%;
+      height: 24px;
+      padding: 0;
+      margin: 0;
+      border: 0 !important;
+      outline: none !important;
+      background: #000 !important;
+      color: #fff !important;
+      font-family: "Press Start 2P", monospace !important;
+      font-size: 16px !important;
+      line-height: 1 !important;
+      text-align: center;
+      text-transform: uppercase;
+      pointer-events: auto !important;
+      box-shadow: none !important;
+      appearance: none;
+    }
+
+    .hud-room-input:focus {
+      outline: none !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      background: #000 !important;
+      color: #fff !important;
+    }
+
     #hudLives {
       display: flex !important;
       align-items: center !important;
@@ -142,7 +170,7 @@
       width: 28px !important;
       height: 28px !important;
       display: inline-block !important;
-      background: transparent url("Images/Sprites/PACMAN 2.png") center / contain no-repeat !important;
+      background: transparent url("Images/sprites/PACMAN 2.png") center / contain no-repeat !important;
       image-rendering: pixelated !important;
       border: 0 !important;
       clip-path: none !important;
@@ -361,7 +389,7 @@
   <div class="hud">
     <div class="hud-box">
       <div class="hud-label">SALA</div>
-      <div id="hudRoom" class="hud-value">ABCD</div>
+      <input id="hudRoom" class="hud-value hud-room-input" type="text" value="ABCD" maxlength="6" autocomplete="off" spellcheck="false" aria-label="Room code" />
     </div>
 
     <div class="hud-box">
@@ -399,7 +427,10 @@
       const roomInput = document.getElementById("roomInput");
       const hudRoom = document.getElementById("hudRoom");
       if (roomInput) roomInput.value = room;
-      if (hudRoom) hudRoom.textContent = room;
+      if (hudRoom) {
+        if ("value" in hudRoom) hudRoom.value = room;
+        else setRoomCodeDisplay(room);
+      }
       if (!isControllerMode) return;
 
       const firebaseConfigController = {
@@ -484,6 +515,38 @@ const hudRoom = document.getElementById("hudRoom");
 const hudLives = document.getElementById("hudLives");
 const hudScore = document.getElementById("hudScore");
 const hudHighScore = document.getElementById("hudHighScore");
+
+function cleanRoomCode(value, fallback = "") {
+  const cleaned = String(value ?? "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 6);
+
+  return cleaned || fallback;
+}
+
+function getRoomCode(fallback = "") {
+  const visibleValue = hudRoom && "value" in hudRoom
+    ? hudRoom.value
+    : hudRoom?.textContent;
+
+  return cleanRoomCode(visibleValue || roomInput?.value || window.PACMAN_ROOM || "", fallback);
+}
+
+function setRoomCodeDisplay(value, fallback = "") {
+  const clean = cleanRoomCode(value, fallback);
+
+  if (roomInput) {
+    roomInput.value = clean;
+  }
+
+  if (hudRoom) {
+    if ("value" in hudRoom) hudRoom.value = clean;
+    else hudRoom.textContent = clean;
+  }
+
+  return clean;
+}
 
 let inputRef = null;
 let lastInputTimestamp = 0;
@@ -1259,7 +1322,7 @@ function updateHUD() {
     // Do NOT use the old .life-icon class.
     // That class was drawing the yellow < shape through CSS.
     life.className = "hud-life-sprite";
-    life.src = "Images/Sprites/PACMAN 2.png";
+    life.src = "Images/sprites/PACMAN 2.png";
     life.alt = "Life";
     life.draggable = false;
 
@@ -1350,19 +1413,19 @@ const continueMapTexture = new Image();
 continueMapTexture.src = "Images/BGS/bg-map-continue.png";
 
 const bigDotTexture = new Image();
-bigDotTexture.src = "Images/Sprites/BIG DOT.png";
+bigDotTexture.src = "Images/sprites/BIG DOT.png";
 
 const pacmanSprites = [];
 ["PACMAN 1.png", "PACMAN 2.png", "PACMAN 3.png"].forEach((name) => {
   const img = new Image();
-  img.src = `Images/Sprites/${name}`;
+  img.src = `Images/sprites/${name}`;
   pacmanSprites.push(img);
 });
 
 const deathSprites = [];
 for (let i = 1; i <= 11; i++) {
   const img = new Image();
-  img.src = `Images/Sprites/PACMAN DEAD ${i}.png`;
+  img.src = `Images/sprites/PACMAN DEAD ${i}.png`;
   deathSprites.push(img);
 }
 
@@ -1375,10 +1438,10 @@ function createSpriteSet() {
 
 function loadFrames(spriteSet, direction, fileA, fileB) {
   const imgA = new Image();
-  imgA.src = `Images/Sprites/${fileA}`;
+  imgA.src = `Images/sprites/${fileA}`;
 
   const imgB = new Image();
-  imgB.src = `Images/Sprites/${fileB}`;
+  imgB.src = `Images/sprites/${fileB}`;
 
   spriteSet[direction].push(imgB, imgA);
 }
@@ -1422,7 +1485,7 @@ const vulnerableSprites = [];
   "VULNERABLE D.png"
 ].forEach((name) => {
   const img = new Image();
-  img.src = `Images/Sprites/${name}`;
+  img.src = `Images/sprites/${name}`;
   vulnerableSprites.push(img);
 });
 
@@ -1434,10 +1497,10 @@ const eatenGhostEyeSprites = {
   right: new Image()
 };
 
-eatenGhostEyeSprites.up.src = "Images/Sprites/EYES UP.png";
-eatenGhostEyeSprites.down.src = "Images/Sprites/EYES DOWN.png";
-eatenGhostEyeSprites.left.src = "Images/Sprites/EYES LEFT.png";
-eatenGhostEyeSprites.right.src = "Images/Sprites/EYES RIGHT.png";
+eatenGhostEyeSprites.up.src = "Images/sprites/EYES UP.png";
+eatenGhostEyeSprites.down.src = "Images/sprites/EYES DOWN.png";
+eatenGhostEyeSprites.left.src = "Images/sprites/EYES LEFT.png";
+eatenGhostEyeSprites.right.src = "Images/sprites/EYES RIGHT.png";
 
 
 /* EATEN / EYES GHOST SPRITES */
@@ -1448,10 +1511,10 @@ const eatenGhostSprites = {
   right: new Image()
 };
 
-eatenGhostSprites.up.src = "Images/Sprites/EYES UP.png";
-eatenGhostSprites.down.src = "Images/Sprites/EYES DOWN.png";
-eatenGhostSprites.left.src = "Images/Sprites/EYES LEFT.png";
-eatenGhostSprites.right.src = "Images/Sprites/EYES RIGHT.png";
+eatenGhostSprites.up.src = "Images/sprites/EYES UP.png";
+eatenGhostSprites.down.src = "Images/sprites/EYES DOWN.png";
+eatenGhostSprites.left.src = "Images/sprites/EYES LEFT.png";
+eatenGhostSprites.right.src = "Images/sprites/EYES RIGHT.png";
 
 const EATEN_GHOST_SPEED_MULTIPLIER = 2.0;
 const EATEN_GHOST_CAGE_WAIT = 4;
@@ -1467,10 +1530,10 @@ const ghostScoreSprites = {
   800: new Image()
 };
 
-ghostScoreSprites[200].src = "Images/Sprites/200-POINTS.png";
-ghostScoreSprites[400].src = "Images/Sprites/400-POINTS.png";
-ghostScoreSprites[600].src = "Images/Sprites/600-POINTS.png";
-ghostScoreSprites[800].src = "Images/Sprites/800-POINTS.png";
+ghostScoreSprites[200].src = "Images/sprites/200-POINTS.png";
+ghostScoreSprites[400].src = "Images/sprites/400-POINTS.png";
+ghostScoreSprites[600].src = "Images/sprites/600-POINTS.png";
+ghostScoreSprites[800].src = "Images/sprites/800-POINTS.png";
 
 let ghostComboTimer = 0;
 let ghostComboCount = 0;
@@ -1540,7 +1603,7 @@ function drawFloatingGhostScores() {
 const ghostPointSprites = {};
 [200, 400, 600, 800].forEach((value) => {
   const img = new Image();
-  img.src = `Images/Sprites/${value}-POINTS.png`;
+  img.src = `Images/sprites/${value}-POINTS.png`;
   ghostPointSprites[value] = img;
 });
 
@@ -1999,14 +2062,24 @@ function setQueuedDirection(action) {
 }
 
 function connectRoom() {
-  const room = (roomInput.value.trim() || "ABCD").toUpperCase();
+  const room = setRoomCodeDisplay(getRoomCode());
+
+  if (!room) {
+    if (inputRef) {
+      inputRef.off();
+      inputRef = null;
+    }
+
+    roomStatus.textContent = "Enter room code.";
+    return;
+  }
 
   if (inputRef) inputRef.off();
 
   inputRef = db.ref("rooms/" + room + "/input");
 
   roomStatus.textContent = "Connected: " + room;
-  hudRoom.textContent = room;
+  setRoomCodeDisplay(room);
 
   inputRef.on("value", (snap) => {
     const data = snap.val();
@@ -2025,12 +2098,35 @@ function connectRoom() {
   });
 }
 
-connectBtn.addEventListener("click", connectRoom);
+if (hudRoom && "value" in hudRoom) {
+  hudRoom.addEventListener("input", () => {
+    const clean = cleanRoomCode(hudRoom.value);
+    hudRoom.value = clean;
+    if (roomInput) roomInput.value = clean;
+  });
+
+  hudRoom.addEventListener("keydown", (event) => {
+    // Prevent typing A/B/W/S/D in the room field from controlling the game.
+    event.stopPropagation();
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      hudRoom.blur();
+      connectRoom();
+    }
+  });
+
+  hudRoom.addEventListener("change", () => {
+    connectRoom();
+  });
+}
+
+if (connectBtn) connectBtn.addEventListener("click", connectRoom);
 
 // Auto-connect because the JOIN button is hidden in this single-file version.
 // This keeps the game listening to the same room used by the background QR.
-if (window.PACMAN_ROOM && roomInput) {
-  roomInput.value = String(window.PACMAN_ROOM).toUpperCase();
+if (window.PACMAN_ROOM) {
+  setRoomCodeDisplay(window.PACMAN_ROOM, "ABCD");
 }
 connectRoom();
 
