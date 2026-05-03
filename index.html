@@ -6,8 +6,7 @@
 
   <title>IMMERSIVE PACMAN PROJECT</title>
 
-  <!-- GitHub-ready unified file: JS is embedded inside this index.html. -->
-
+  <!-- PIXEL FONT -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -44,11 +43,24 @@
       image-rendering: pixelated;
     }
 
+    /* ==========================
+       HIDDEN ROOM SYSTEM
+
+       The visible QR was removed.
+       These hidden elements stay because game.js uses:
+       roomInput, connectRoomBtn, roomStatus.
+    ========================== */
+
     .hidden-room-system {
       display: none !important;
       visibility: hidden !important;
       pointer-events: none !important;
     }
+
+    /* ==========================
+       INFO BOARD / HUD
+       White outline removed.
+    ========================== */
 
     .hud {
       position: fixed;
@@ -108,6 +120,7 @@
       min-height: 28px !important;
     }
 
+    /* New life image class from the fixed game.js */
     #hudLives .hud-life-sprite {
       width: 28px !important;
       height: 28px !important;
@@ -123,12 +136,13 @@
       outline: none !important;
     }
 
+    /* Fallback in case an older game.js still creates .life-icon */
     #hudLives .life-icon,
     .life-icon {
       width: 28px !important;
       height: 28px !important;
       display: inline-block !important;
-      background: transparent url("Images/Sprites/PACMAN 2.png") center / contain no-repeat !important;
+      background: transparent url("Images/sprites/PACMAN 2.png") center / contain no-repeat !important;
       image-rendering: pixelated !important;
       border: 0 !important;
       clip-path: none !important;
@@ -153,6 +167,10 @@
       outline: none !important;
     }
 
+    /* ==========================
+       SMALL SCREEN SAFETY
+    ========================== */
+
     @media (max-width: 900px) {
       .hud {
         height: 64px;
@@ -175,18 +193,171 @@
         height: 22px !important;
       }
     }
+
+
+    /* ==========================
+       SINGLE-FILE CONTROLLER MODE
+    ========================== */
+    #controllerScreen {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      padding: 18px;
+      background: radial-gradient(circle at center, #111 0%, #000 70%);
+      color: white;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    body.controller-mode {
+      display: block;
+      overflow: hidden;
+      background: #000;
+    }
+
+    body.controller-mode #game,
+    body.controller-mode .hud,
+    body.controller-mode .hidden-room-system {
+      display: none !important;
+    }
+
+    body.controller-mode #controllerScreen {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 18px;
+      place-items: center;
+    }
+
+    .controller-title {
+      text-align: center;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .controller-room {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #fff;
+    }
+
+    .controller-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      width: min(900px, 100%);
+      align-items: center;
+    }
+
+    .dpad {
+      display: grid;
+      grid-template-columns: 92px 92px 92px;
+      grid-template-rows: 92px 92px 92px;
+      gap: 10px;
+      justify-content: center;
+      align-content: center;
+    }
+
+    .action-buttons {
+      display: grid;
+      grid-template-columns: 120px 120px;
+      gap: 18px;
+      justify-content: center;
+      align-content: center;
+    }
+
+    .pad-btn {
+      border: 3px solid white;
+      border-radius: 18px;
+      background: #080808;
+      color: white;
+      font-family: "Press Start 2P", monospace;
+      font-size: 22px;
+      min-height: 92px;
+      box-shadow: 0 8px 0 #444;
+    }
+
+    .pad-btn:active,
+    .pad-btn.active {
+      transform: translateY(6px);
+      box-shadow: 0 2px 0 #444;
+      background: white;
+      color: black;
+    }
+
+    .controller-status {
+      font-size: 10px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 700px) {
+      .controller-grid {
+        grid-template-columns: 1fr;
+        gap: 22px;
+      }
+
+      .dpad {
+        grid-template-columns: 76px 76px 76px;
+        grid-template-rows: 76px 76px 76px;
+      }
+
+      .pad-btn {
+        min-height: 76px;
+        font-size: 16px;
+      }
+
+      .action-buttons {
+        grid-template-columns: 100px 100px;
+      }
+    }
+
   </style>
 </head>
 
 <body>
+  <!-- GAME CANVAS -->
   <canvas id="game"></canvas>
 
+  <!-- HIDDEN ROOM CONNECTION SYSTEM -->
   <div class="hidden-room-system">
     <input id="roomInput" type="text" value="ABCD" maxlength="6" />
     <button id="connectRoomBtn" type="button">JOIN</button>
     <div id="roomStatus">Waiting...</div>
   </div>
+  <!-- SAME-FILE PHONE CONTROLLER MODE
+       Your background-image QR should point to:
+       https://YOUR-GITHUB-PAGES-URL/index.html?controller=1&room=ABCD
+  -->
+  <div id="controllerScreen">
+    <div class="controller-title">
+      IMMERSIVE PACMAN<br />CONTROLLER
+      <div id="controllerRoom" class="controller-room">ROOM: ABCD</div>
+    </div>
 
+    <div class="controller-grid">
+      <div class="dpad">
+        <div></div>
+        <button class="pad-btn" data-action="up">▲</button>
+        <div></div>
+        <button class="pad-btn" data-action="left">◀</button>
+        <button class="pad-btn" data-action="down">▼</button>
+        <button class="pad-btn" data-action="right">▶</button>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="pad-btn" data-action="a">A</button>
+        <button class="pad-btn" data-action="b">B</button>
+      </div>
+    </div>
+
+    <div id="controllerStatus" class="controller-status">Connecting...</div>
+  </div>
+
+
+  <!-- INFO BOARD / HUD -->
   <div class="hud">
     <div class="hud-box">
       <div class="hud-label">SALA</div>
@@ -209,9 +380,83 @@
     </div>
   </div>
 
+  <!-- FIREBASE -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- SINGLE-FILE ROOM + CONTROLLER BOOTSTRAP -->
   <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const room = String(params.get("room") || "ABCD").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "ABCD";
+      const isControllerMode = params.get("controller") === "1";
+
+      window.PACMAN_ROOM = room;
+      window.IS_CONTROLLER_MODE = isControllerMode;
+
+      document.body.classList.toggle("controller-mode", isControllerMode);
+
+      const roomInput = document.getElementById("roomInput");
+      const hudRoom = document.getElementById("hudRoom");
+      if (roomInput) roomInput.value = room;
+      if (hudRoom) hudRoom.textContent = room;
+      if (!isControllerMode) return;
+
+      const firebaseConfigController = {
+        apiKey: "AIzaSyAjUTUVx401HS9qrTmzab27nUiLvvMkfxQ",
+        authDomain: "pacman-86c4e.firebaseapp.com",
+        databaseURL: "https://pacman-86c4e-default-rtdb.firebaseio.com",
+        projectId: "pacman-86c4e",
+        storageBucket: "pacman-86c4e.firebasestorage.app",
+        messagingSenderId: "1044337774275",
+        appId: "1:1044337774275:web:362fcd603a473c04e95c76"
+      };
+
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfigController);
+      const dbController = firebase.database();
+      const inputRefController = dbController.ref("rooms/" + room + "/input");
+
+      const controllerRoom = document.getElementById("controllerRoom");
+      const controllerStatus = document.getElementById("controllerStatus");
+      if (controllerRoom) controllerRoom.textContent = "ROOM: " + room;
+      if (controllerStatus) controllerStatus.textContent = "Connected to room " + room;
+
+      function sendAction(action) {
+        inputRefController.set({
+          action: action,
+          t: Date.now()
+        });
+
+        if (controllerStatus) {
+          controllerStatus.textContent = "Sent: " + action.toUpperCase();
+        }
+      }
+
+      document.querySelectorAll(".pad-btn[data-action]").forEach((button) => {
+        const action = button.getAttribute("data-action");
+
+        const press = (event) => {
+          event.preventDefault();
+          button.classList.add("active");
+          sendAction(action);
+        };
+
+        const release = (event) => {
+          event.preventDefault();
+          button.classList.remove("active");
+        };
+
+        button.addEventListener("pointerdown", press);
+        button.addEventListener("pointerup", release);
+        button.addEventListener("pointerleave", release);
+        button.addEventListener("click", (event) => event.preventDefault());
+      });
+    })();
+  </script>
+
+  <!-- MAIN GAME JS EMBEDDED BELOW -->
+  <script>
+  if (!window.IS_CONTROLLER_MODE) {
 /* ==========================
    FIREBASE CONFIG
 ========================== */
@@ -246,6 +491,246 @@ let lastInputTimestamp = 0;
 let score = 0;
 let lives = 3;
 let highScore = Number(localStorage.getItem("pacmanHighScore")) || 0;
+
+/* ==========================
+   SOUND MANAGER
+   Folder required:
+   /sound/
+
+   Rename your MP3 files exactly like this:
+   sound/dot-eating.mp3
+   sound/start.mp3
+   sound/end.mp3
+   sound/game-over.mp3
+   sound/ghost-moving.mp3
+   sound/eating-ghost.mp3
+   sound/eyes-going-to-cage.mp3
+
+   Main behavior:
+   - Dot eating does not stack.
+   - Dot eating keeps repeating only while Pac-Man keeps eating.
+   - The final dot-eating sound is allowed to finish naturally.
+   - Ghost moving uses one simple loop.
+   - Eyes-to-cage uses one loop while any eaten ghost is returning.
+========================== */
+const GameSound = {
+  unlocked: false,
+
+  // Increase this if your dot-eating sound is longer.
+  // Lower this if it repeats too slowly.
+  DOT_CHAIN_GAP_MS: 180,
+
+  sounds: {},
+  dotLastEatTime: 0,
+  dotActive: false,
+
+  currentLoop: null,
+
+  init() {
+    this.sounds = {
+      dotEating: this.createAudio("sound/dot-eating.mp3", 0.55, false),
+      start: this.createAudio("sound/start.mp3", 0.75, false),
+      end: this.createAudio("sound/end.mp3", 0.80, false),
+      gameOver: this.createAudio("sound/game-over.mp3", 0.85, false),
+      ghostMoving: this.createAudio("sound/ghost-moving.mp3", 0.42, true),
+      eatingGhost: this.createAudio("sound/eating-ghost.mp3", 0.85, false),
+      eyesToCage: this.createAudio("sound/eyes-going-to-cage.mp3", 0.65, true)
+    };
+
+    const dot = this.sounds.dotEating;
+
+    dot.addEventListener("ended", () => {
+      const now = performance.now();
+      const recentlyAteDot = now - this.dotLastEatTime <= this.DOT_CHAIN_GAP_MS;
+
+      if (recentlyAteDot && !endingStarted && !gameOverActive && !player.isDead) {
+        dot.currentTime = 0;
+        this.safePlay(dot);
+      } else {
+        this.dotActive = false;
+      }
+    });
+  },
+
+  createAudio(src, volume = 1, loop = false) {
+    const audio = new Audio(src);
+    audio.preload = "auto";
+    audio.volume = volume;
+    audio.loop = loop;
+
+    audio.addEventListener("error", () => {
+      console.warn("Sound file could not load:", src);
+    });
+
+    audio.load();
+    return audio;
+  },
+
+  unlock() {
+    if (this.unlocked) return;
+    this.unlocked = true;
+
+    Object.values(this.sounds).forEach((audio) => {
+      const oldVolume = audio.volume;
+      audio.volume = 0;
+
+      const playPromise = audio.play();
+
+      if (playPromise && typeof playPromise.then === "function") {
+        playPromise
+          .then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.volume = oldVolume;
+          })
+          .catch(() => {
+            audio.volume = oldVolume;
+          });
+      } else {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = oldVolume;
+      }
+    });
+  },
+
+  safePlay(audio) {
+    if (!audio) return;
+
+    const playPromise = audio.play();
+
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        // Browser probably blocked audio until the game window gets one click/key press.
+      });
+    }
+  },
+
+  playOneShot(name) {
+    const audio = this.sounds[name];
+    if (!audio) return;
+
+    audio.pause();
+    audio.currentTime = 0;
+    this.safePlay(audio);
+  },
+
+  startLoop(name) {
+    if (this.currentLoop === name) return;
+
+    this.stopBackgroundLoops();
+
+    const audio = this.sounds[name];
+    if (!audio) return;
+
+    audio.loop = true;
+    audio.currentTime = 0;
+    this.currentLoop = name;
+    this.safePlay(audio);
+  },
+
+  stopLoop(name, reset = true) {
+    const audio = this.sounds[name];
+    if (!audio) return;
+
+    audio.pause();
+    if (reset) audio.currentTime = 0;
+
+    if (this.currentLoop === name) {
+      this.currentLoop = null;
+    }
+  },
+
+  stopBackgroundLoops() {
+    this.stopLoop("ghostMoving");
+    this.stopLoop("eyesToCage");
+    this.currentLoop = null;
+  },
+
+  stopAllNow() {
+    Object.values(this.sounds).forEach((audio) => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
+
+    this.currentLoop = null;
+    this.dotActive = false;
+  },
+
+  onDotEaten() {
+    const dot = this.sounds.dotEating;
+    if (!dot) return;
+
+    this.dotLastEatTime = performance.now();
+
+    if (!this.dotActive) {
+      this.dotActive = true;
+      dot.currentTime = 0;
+      this.safePlay(dot);
+    }
+  },
+
+  playStart() {
+    this.stopBackgroundLoops();
+    this.playOneShot("start");
+  },
+
+  playEnd() {
+    // Do not stop dotEating here. The final eating sound should finish naturally.
+    this.stopBackgroundLoops();
+    this.playOneShot("end");
+  },
+
+  playGameOver() {
+    this.stopAllNow();
+    this.playOneShot("gameOver");
+  },
+
+  playEatingGhost() {
+    this.playOneShot("eatingGhost");
+  },
+
+  updateLoops() {
+    if (
+      screenState !== "playing" ||
+      gameFrozen ||
+      readyFreezeTimer > 0 ||
+      endingStarted ||
+      gameOverActive ||
+      player.isDead
+    ) {
+      this.stopBackgroundLoops();
+      return;
+    }
+
+    const hasEyesReturning = allGhosts.some((g) => g.isEaten && g.mode === "eyes");
+
+    if (hasEyesReturning) {
+      this.startLoop("eyesToCage");
+      return;
+    }
+
+    const hasActiveGhostMoving = allGhosts.some((g) => {
+      if (g.isEaten) return false;
+      if (g.cageMode === "waitingInCage") return true;
+      if (g.cageMode === "leavingCage") return true;
+      return g.isReleased && (g.moving || g.cageMode === "outside");
+    });
+
+    if (hasActiveGhostMoving) {
+      this.startLoop("ghostMoving");
+    } else {
+      this.stopBackgroundLoops();
+    }
+  }
+};
+
+function setupGameSoundUnlockers() {
+  ["click", "keydown", "touchstart", "pointerdown"].forEach((eventName) => {
+    window.addEventListener(eventName, () => GameSound.unlock(), { once: false });
+  });
+}
+
 
 // Debug/testing mode. When ON, Pac-Man cannot die from touching ghosts.
 let invincibleMode = false;
@@ -298,9 +783,9 @@ function hasActiveDots() {
 }
 
 function startEndingSequence() {
-  stopDotEatSound();
-
   if (endingStarted) return;
+
+  GameSound.playEnd();
 
   endingStarted = true;
   gameFrozen = true;
@@ -388,14 +873,15 @@ function showStartScreen() {
 function startFromStartScreen() {
   if (screenState !== "start") return;
 
+  GameSound.unlock();
+  GameSound.playStart();
+
   screenState = "playing";
   gameFrozen = false;
   startReadyFreeze("Starting...");
 }
 
 function showPauseScreen() {
-  stopDotEatSound();
-
   if (screenState !== "playing") return;
   if (gameOverActive || endingStarted) return;
 
@@ -460,6 +946,8 @@ function normalizeButtonAction(action) {
 }
 
 function handleActionButton(action) {
+  GameSound.unlock();
+
   const button = normalizeButtonAction(action);
 
   if (button === "a") {
@@ -771,7 +1259,7 @@ function updateHUD() {
     // Do NOT use the old .life-icon class.
     // That class was drawing the yellow < shape through CSS.
     life.className = "hud-life-sprite";
-    life.src = "Images/Sprites/PACMAN 2.png";
+    life.src = "Images/sprites/PACMAN 2.png";
     life.alt = "Life";
     life.draggable = false;
 
@@ -862,19 +1350,19 @@ const continueMapTexture = new Image();
 continueMapTexture.src = "Images/BGS/bg-map-continue.png";
 
 const bigDotTexture = new Image();
-bigDotTexture.src = "Images/Sprites/BIG DOT.png";
+bigDotTexture.src = "Images/sprites/BIG DOT.png";
 
 const pacmanSprites = [];
 ["PACMAN 1.png", "PACMAN 2.png", "PACMAN 3.png"].forEach((name) => {
   const img = new Image();
-  img.src = `Images/Sprites/${name}`;
+  img.src = `Images/sprites/${name}`;
   pacmanSprites.push(img);
 });
 
 const deathSprites = [];
 for (let i = 1; i <= 11; i++) {
   const img = new Image();
-  img.src = `Images/Sprites/PACMAN DEAD ${i}.png`;
+  img.src = `Images/sprites/PACMAN DEAD ${i}.png`;
   deathSprites.push(img);
 }
 
@@ -887,10 +1375,10 @@ function createSpriteSet() {
 
 function loadFrames(spriteSet, direction, fileA, fileB) {
   const imgA = new Image();
-  imgA.src = `Images/Sprites/${fileA}`;
+  imgA.src = `Images/sprites/${fileA}`;
 
   const imgB = new Image();
-  imgB.src = `Images/Sprites/${fileB}`;
+  imgB.src = `Images/sprites/${fileB}`;
 
   spriteSet[direction].push(imgB, imgA);
 }
@@ -934,7 +1422,7 @@ const vulnerableSprites = [];
   "VULNERABLE D.png"
 ].forEach((name) => {
   const img = new Image();
-  img.src = `Images/Sprites/${name}`;
+  img.src = `Images/sprites/${name}`;
   vulnerableSprites.push(img);
 });
 
@@ -946,10 +1434,10 @@ const eatenGhostEyeSprites = {
   right: new Image()
 };
 
-eatenGhostEyeSprites.up.src = "Images/Sprites/EYES UP.png";
-eatenGhostEyeSprites.down.src = "Images/Sprites/EYES DOWN.png";
-eatenGhostEyeSprites.left.src = "Images/Sprites/EYES LEFT.png";
-eatenGhostEyeSprites.right.src = "Images/Sprites/EYES RIGHT.png";
+eatenGhostEyeSprites.up.src = "Images/sprites/EYES UP.png";
+eatenGhostEyeSprites.down.src = "Images/sprites/EYES DOWN.png";
+eatenGhostEyeSprites.left.src = "Images/sprites/EYES LEFT.png";
+eatenGhostEyeSprites.right.src = "Images/sprites/EYES RIGHT.png";
 
 
 /* EATEN / EYES GHOST SPRITES */
@@ -960,10 +1448,10 @@ const eatenGhostSprites = {
   right: new Image()
 };
 
-eatenGhostSprites.up.src = "Images/Sprites/EYES UP.png";
-eatenGhostSprites.down.src = "Images/Sprites/EYES DOWN.png";
-eatenGhostSprites.left.src = "Images/Sprites/EYES LEFT.png";
-eatenGhostSprites.right.src = "Images/Sprites/EYES RIGHT.png";
+eatenGhostSprites.up.src = "Images/sprites/EYES UP.png";
+eatenGhostSprites.down.src = "Images/sprites/EYES DOWN.png";
+eatenGhostSprites.left.src = "Images/sprites/EYES LEFT.png";
+eatenGhostSprites.right.src = "Images/sprites/EYES RIGHT.png";
 
 const EATEN_GHOST_SPEED_MULTIPLIER = 2.0;
 const EATEN_GHOST_CAGE_WAIT = 4;
@@ -979,10 +1467,10 @@ const ghostScoreSprites = {
   800: new Image()
 };
 
-ghostScoreSprites[200].src = "Images/Sprites/200-POINTS.png";
-ghostScoreSprites[400].src = "Images/Sprites/400-POINTS.png";
-ghostScoreSprites[600].src = "Images/Sprites/600-POINTS.png";
-ghostScoreSprites[800].src = "Images/Sprites/800-POINTS.png";
+ghostScoreSprites[200].src = "Images/sprites/200-POINTS.png";
+ghostScoreSprites[400].src = "Images/sprites/400-POINTS.png";
+ghostScoreSprites[600].src = "Images/sprites/600-POINTS.png";
+ghostScoreSprites[800].src = "Images/sprites/800-POINTS.png";
 
 let ghostComboTimer = 0;
 let ghostComboCount = 0;
@@ -1052,7 +1540,7 @@ function drawFloatingGhostScores() {
 const ghostPointSprites = {};
 [200, 400, 600, 800].forEach((value) => {
   const img = new Image();
-  img.src = `Images/Sprites/${value}-POINTS.png`;
+  img.src = `Images/sprites/${value}-POINTS.png`;
   ghostPointSprites[value] = img;
 });
 
@@ -1099,8 +1587,7 @@ const layoutStr = `
 111111111111111111111111111111111111111111111111111111111111111111
 `.trim();
 
-const mapData = layoutStr.split("
-").map((line) => line.trim().split(""));
+const mapData = layoutStr.split("\n").map((line) => line.trim().split(""));
 
 /* ==========================
    MAP HELPERS
@@ -1435,9 +1922,7 @@ function eatDotAt(col, row) {
   if (!dot) return;
 
   dot.active = false;
-
-  // Same sound for both small dots and big dots.
-  playDotEatSound();
+  GameSound.onDotEaten();
 
   if (dot.isBig) {
     updateScore(50);
@@ -1492,113 +1977,6 @@ function setupScreenWakeLock() {
   });
 }
 
-
-/* ==========================
-   DOT EATING SOUND
-   Faster, non-overlapping munch sound.
-   While Pac-Man keeps eating, it loops.
-   When Pac-Man stops eating, the final sound finishes naturally.
-========================== */
-const DOT_EAT_SOUND_SRC = "sound/03. PAC-MAN - Eating The Pac-dots.mp3";
-
-// Speed of the munch sound.
-// 1.00 = original speed.
-// 1.25 = faster.
-// 1.40 = very fast.
-const DOT_EAT_SOUND_PLAYBACK_RATE = 1.35;
-
-// How long after the last eaten dot before the sound stops looping.
-// The sound is NOT cut at this point; it simply finishes its current pass.
-const DOT_EAT_SOUND_STOP_DELAY = 120;
-
-const dotEatSound = new Audio(DOT_EAT_SOUND_SRC);
-dotEatSound.preload = "auto";
-dotEatSound.volume = 0.75;
-dotEatSound.loop = true;
-dotEatSound.playbackRate = DOT_EAT_SOUND_PLAYBACK_RATE;
-
-let dotEatSoundStopTimer = null;
-let dotEatSoundFinishing = false;
-
-function playDotEatSound() {
-  try {
-    dotEatSound.playbackRate = DOT_EAT_SOUND_PLAYBACK_RATE;
-
-    // If the sound had been told to finish, but Pac-Man eats again,
-    // return it to loop mode without creating a second audio copy.
-    dotEatSoundFinishing = false;
-    dotEatSound.loop = true;
-
-    if (dotEatSound.paused) {
-      dotEatSound.currentTime = 0;
-      const playPromise = dotEatSound.play();
-
-      if (playPromise && typeof playPromise.catch === "function") {
-        playPromise.catch(() => {
-          // Browser may block audio until the page receives one real click/key press.
-        });
-      }
-    }
-
-    // Every dot extends the loop, but does not stack audio.
-    if (dotEatSoundStopTimer) {
-      clearTimeout(dotEatSoundStopTimer);
-    }
-
-    dotEatSoundStopTimer = setTimeout(() => {
-      finishDotEatSoundNaturally();
-    }, DOT_EAT_SOUND_STOP_DELAY);
-
-  } catch (err) {
-    // Safe fail: gameplay should never stop because of audio.
-  }
-}
-
-function finishDotEatSoundNaturally() {
-  try {
-    if (dotEatSoundStopTimer) {
-      clearTimeout(dotEatSoundStopTimer);
-      dotEatSoundStopTimer = null;
-    }
-
-    // Stop looping, but let the current audio pass finish.
-    dotEatSound.loop = false;
-    dotEatSoundFinishing = true;
-  } catch (err) {}
-}
-
-function stopDotEatSound() {
-  try {
-    if (dotEatSoundStopTimer) {
-      clearTimeout(dotEatSoundStopTimer);
-      dotEatSoundStopTimer = null;
-    }
-
-    dotEatSoundFinishing = false;
-    dotEatSound.loop = false;
-    dotEatSound.pause();
-    dotEatSound.currentTime = 0;
-  } catch (err) {}
-}
-
-dotEatSound.addEventListener("ended", () => {
-  if (dotEatSoundFinishing) {
-    dotEatSoundFinishing = false;
-    dotEatSound.currentTime = 0;
-  }
-});
-
-function unlockDotEatSounds() {
-  try {
-    dotEatSound.playbackRate = DOT_EAT_SOUND_PLAYBACK_RATE;
-    dotEatSound.load();
-  } catch (err) {}
-}
-
-["click", "keydown", "touchstart", "pointerdown"].forEach((eventName) => {
-  window.addEventListener(eventName, unlockDotEatSounds, { once: true });
-});
-
 /* ==========================
    ROOM CONNECTION
 ========================== */
@@ -1647,25 +2025,21 @@ function connectRoom() {
   });
 }
 
-function autoConnectDefaultRoom() {
-  if (!roomInput) return;
+connectBtn.addEventListener("click", connectRoom);
 
-  const defaultRoom = (roomInput.value.trim() || "ABCD").toUpperCase();
-  roomInput.value = defaultRoom;
-
-  if (hudRoom) {
-    hudRoom.textContent = defaultRoom;
-  }
-
-  connectRoom();
+// Auto-connect because the JOIN button is hidden in this single-file version.
+// This keeps the game listening to the same room used by the background QR.
+if (window.PACMAN_ROOM && roomInput) {
+  roomInput.value = String(window.PACMAN_ROOM).toUpperCase();
 }
-
-if (connectBtn) connectBtn.addEventListener("click", connectRoom);
+connectRoom();
 
 /* ==========================
    INPUT
 ========================== */
 window.addEventListener("keydown", (e) => {
+  GameSound.unlock();
+
   const key = e.key.toLowerCase();
 
   // Keyboard A syncs with gamepad A on START / PAUSE screens.
@@ -1801,6 +2175,8 @@ function activateGhostVulnerable() {
 }
 
 function eatGhost(g) {
+  GameSound.playEatingGhost();
+
   const ghostScoreValue = getNextGhostScoreValue();
   updateScore(ghostScoreValue);
   spawnGhostPointPopup(ghostScoreValue, g.visualX, g.visualY);
@@ -2482,6 +2858,7 @@ function checkGhostCollision(g) {
     }
 
     player.isDead = true;
+    GameSound.stopBackgroundLoops();
 
     player.moving = false;
     allGhosts.forEach((ghostItem) => {
@@ -2817,9 +3194,9 @@ function updateEntity(ent, dt, isPlayer) {
 
 
 function startGameOverSequence() {
-  stopDotEatSound();
-
   if (gameOverActive) return;
+
+  GameSound.playGameOver();
 
   endingStarted = false;
   gameOverActive = true;
@@ -2863,6 +3240,8 @@ function startGameOverSequence() {
    RESET
 ========================== */
 function resetRound() {
+  GameSound.stopBackgroundLoops();
+
   player.isDead = false;
 
   player.col = pacmanSpawn.c;
@@ -2902,6 +3281,8 @@ function restartAfterGameOver() {
 }
 
 function resetGame() {
+  GameSound.stopBackgroundLoops();
+
   // Full state cleanup after ending / game over / debug reset.
   if (gameOverResetTimeout) {
     clearTimeout(gameOverResetTimeout);
@@ -3153,6 +3534,7 @@ function update(time) {
   lastFrameTime = time;
 
   updateFloatingGhostScores(dt);
+  GameSound.updateLoops();
 
   if (gameOverActive) {
     gameOverLoopSeen = true;
@@ -3289,18 +3671,21 @@ function update(time) {
 /* ==========================
    START
 ========================== */
+GameSound.init();
+setupGameSoundUnlockers();
 eatDotAt(player.col, player.row);
 createDebugButtons();
 updateHUD();
-autoConnectDefaultRoom();
 setupScreenWakeLock();
 
 // First load auto-starts the game.
 // After GAME OVER, the game still goes to the CONTINUE / START screen.
 screenState = "playing";
 gameFrozen = false;
+GameSound.playStart();
 startReadyFreeze("Starting...");
 requestAnimationFrame(update);
+  }
   </script>
 </body>
 </html>
