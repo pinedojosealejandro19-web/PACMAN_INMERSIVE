@@ -112,34 +112,6 @@
       color: white;
     }
 
-    .hud-room-input {
-      width: 118px;
-      max-width: 100%;
-      height: 24px;
-      padding: 0;
-      margin: 0;
-      border: 0 !important;
-      outline: none !important;
-      background: #000 !important;
-      color: #fff !important;
-      font-family: "Press Start 2P", monospace !important;
-      font-size: 16px !important;
-      line-height: 1 !important;
-      text-align: center;
-      text-transform: uppercase;
-      pointer-events: auto !important;
-      box-shadow: none !important;
-      appearance: none;
-    }
-
-    .hud-room-input:focus {
-      outline: none !important;
-      border: 0 !important;
-      box-shadow: none !important;
-      background: #000 !important;
-      color: #fff !important;
-    }
-
     #hudLives {
       display: flex !important;
       align-items: center !important;
@@ -389,7 +361,7 @@
   <div class="hud">
     <div class="hud-box">
       <div class="hud-label">SALA</div>
-      <input id="hudRoom" class="hud-value hud-room-input" type="text" value="ABCD" maxlength="6" autocomplete="off" spellcheck="false" aria-label="Room code" />
+      <div id="hudRoom" class="hud-value">ABCD</div>
     </div>
 
     <div class="hud-box">
@@ -427,10 +399,7 @@
       const roomInput = document.getElementById("roomInput");
       const hudRoom = document.getElementById("hudRoom");
       if (roomInput) roomInput.value = room;
-      if (hudRoom) {
-        if ("value" in hudRoom) hudRoom.value = room;
-        else setRoomCodeDisplay(room);
-      }
+      if (hudRoom) hudRoom.textContent = room;
       if (!isControllerMode) return;
 
       const firebaseConfigController = {
@@ -516,38 +485,6 @@ const hudLives = document.getElementById("hudLives");
 const hudScore = document.getElementById("hudScore");
 const hudHighScore = document.getElementById("hudHighScore");
 
-function cleanRoomCode(value, fallback = "") {
-  const cleaned = String(value ?? "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .slice(0, 6);
-
-  return cleaned || fallback;
-}
-
-function getRoomCode(fallback = "") {
-  const visibleValue = hudRoom && "value" in hudRoom
-    ? hudRoom.value
-    : hudRoom?.textContent;
-
-  return cleanRoomCode(visibleValue || roomInput?.value || window.PACMAN_ROOM || "", fallback);
-}
-
-function setRoomCodeDisplay(value, fallback = "") {
-  const clean = cleanRoomCode(value, fallback);
-
-  if (roomInput) {
-    roomInput.value = clean;
-  }
-
-  if (hudRoom) {
-    if ("value" in hudRoom) hudRoom.value = clean;
-    else hudRoom.textContent = clean;
-  }
-
-  return clean;
-}
-
 let inputRef = null;
 let lastInputTimestamp = 0;
 
@@ -588,6 +525,12 @@ const GameSound = {
   dotActive: false,
 
   currentLoop: null,
+  pendingStartSound: false,
+  firstStartSoundPlayed: false,
+
+  // The fail file is longer, but only the first part is useful for the death sprite animation.
+  FAIL_SOUND_MAX_MS: 2000,
+  failSoundTimer: null,
 
   init() {
     this.sounds = {
@@ -645,6 +588,7 @@ const GameSound = {
             audio.pause();
             audio.currentTime = 0;
             audio.volume = oldVolume;
+            this.playPendingStartIfNeeded();
           })
           .catch(() => {
             audio.volume = oldVolume;
@@ -653,19 +597,29 @@ const GameSound = {
         audio.pause();
         audio.currentTime = 0;
         audio.volume = oldVolume;
+        this.playPendingStartIfNeeded();
       }
     });
   },
 
-  safePlay(audio) {
+  safePlay(audio, onBlocked = null) {
     if (!audio) return;
 
-    const playPromise = audio.play();
+    try {
+      const playPromise = audio.play();
 
-    if (playPromise && typeof playPromise.catch === "function") {
-      playPromise.catch(() => {
-        // Browser probably blocked audio until the game window gets one click/key press.
-      });
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(() => {
+          // Browser probably blocked audio until the game window gets one click/key press.
+          if (typeof onBlocked === "function") {
+            onBlocked();
+          }
+        });
+      }
+    } catch (err) {
+      if (typeof onBlocked === "function") {
+        onBlocked();
+      }
     }
   },
 
@@ -711,6 +665,11 @@ const GameSound = {
   },
 
   stopAllNow() {
+    if (this.failSoundTimer) {
+      clearTimeout(this.failSoundTimer);
+      this.failSoundTimer = null;
+    }
+
     Object.values(this.sounds).forEach((audio) => {
       audio.pause();
       audio.currentTime = 0;
@@ -733,9 +692,40 @@ const GameSound = {
     }
   },
 
-  playStart() {
+  playStart(force = false) {
+    const audio = this.sounds.start;
+    if (!audio) return;
+
     this.stopBackgroundLoops();
-    this.playOneShot("start");
+
+    audio.pause();
+    audio.currentTime = 0;
+
+    this.safePlay(audio, () => {
+      // First game auto-starts, so browsers may block this sound.
+      // Keep it pending and play it as soon as the page receives interaction.
+      this.pendingStartSound = true;
+    });
+
+    if (force) {
+      this.pendingStartSound = false;
+    }
+
+    this.firstStartSoundPlayed = true;
+  },
+
+  playPendingStartIfNeeded() {
+    if (!this.pendingStartSound) return;
+
+    const audio = this.sounds.start;
+    if (!audio) return;
+
+    this.pendingStartSound = false;
+    audio.pause();
+    audio.currentTime = 0;
+    this.safePlay(audio, () => {
+      this.pendingStartSound = true;
+    });
   },
 
   playEnd() {
@@ -746,7 +736,28 @@ const GameSound = {
 
   playGameOver() {
     this.stopAllNow();
-    this.playOneShot("gameOver");
+
+    const audio = this.sounds.gameOver;
+    if (!audio) return;
+
+    if (this.failSoundTimer) {
+      clearTimeout(this.failSoundTimer);
+      this.failSoundTimer = null;
+    }
+
+    audio.pause();
+    audio.currentTime = 0;
+    this.safePlay(audio);
+
+    // Cut the longer fail file after the useful first 2 seconds.
+    this.failSoundTimer = setTimeout(() => {
+      try {
+        audio.pause();
+        audio.currentTime = 0;
+      } catch (err) {}
+
+      this.failSoundTimer = null;
+    }, this.FAIL_SOUND_MAX_MS);
   },
 
   playEatingGhost() {
@@ -790,14 +801,38 @@ const GameSound = {
 
 function setupGameSoundUnlockers() {
   ["click", "keydown", "touchstart", "pointerdown"].forEach((eventName) => {
-    window.addEventListener(eventName, () => GameSound.unlock(), { once: false });
+    window.addEventListener(eventName, () => {
+      GameSound.unlock();
+      GameSound.playPendingStartIfNeeded();
+    }, { once: false });
   });
 }
 
 
-// Production mode: invincibility is disabled.
+// Debug/testing mode. When ON, Pac-Man cannot die from touching ghosts.
 let invincibleMode = false;
+let invincibleButton = null;
 
+function updateInvincibleButtonLabel() {
+  if (!invincibleButton) return;
+
+  invincibleButton.textContent = invincibleMode
+    ? "INVINCIBLE: ON"
+    : "INVINCIBLE: OFF";
+
+  invincibleButton.style.background = invincibleMode ? "#004d00" : "black";
+}
+
+function toggleInvincibleMode() {
+  invincibleMode = !invincibleMode;
+  updateInvincibleButtonLabel();
+
+  if (roomStatus) {
+    roomStatus.textContent = invincibleMode
+      ? "Invincible mode ON."
+      : "Invincible mode OFF.";
+  }
+}
 
 /* ==========================
    ENDING SEQUENCE
@@ -875,6 +910,12 @@ function startReadyFreeze(statusText = "Starting...") {
 
   readyFreezeTimer = READY_FREEZE_DURATION;
 
+  // Play the start audio every time the READY screen appears.
+  // If the browser blocks autoplay, GameSound keeps it pending until the next interaction.
+  if (typeof GameSound !== "undefined") {
+    GameSound.playStart();
+  }
+
   if (roomStatus) {
     roomStatus.textContent = statusText;
   }
@@ -916,7 +957,6 @@ function startFromStartScreen() {
   if (screenState !== "start") return;
 
   GameSound.unlock();
-  GameSound.playStart();
 
   screenState = "playing";
   gameFrozen = false;
@@ -989,6 +1029,7 @@ function normalizeButtonAction(action) {
 
 function handleActionButton(action) {
   GameSound.unlock();
+  GameSound.playPendingStartIfNeeded();
 
   const button = normalizeButtonAction(action);
 
@@ -1082,6 +1123,186 @@ function updateGhostPointPopups(dt) {
   ghostPointPopups = ghostPointPopups.filter((popup) => popup.age < popup.duration);
 }
 
+/* =========================================================
+   TEMPORARY DEBUG MENU - SAFE TO DELETE LATER
+   ---------------------------------------------------------
+   To remove the testing menu completely, delete everything
+   from this comment down to:
+   END TEMPORARY DEBUG MENU
+========================================================= */
+
+function clearAllDotsAndStartEnding() {
+  if (endingStarted) return;
+
+  dots.forEach((dot) => {
+    dot.active = false;
+  });
+
+  roomStatus.textContent = "Test win activated.";
+  draw();
+  startEndingSequence();
+}
+
+function restartGameNow() {
+  endingStarted = false;
+  gameFrozen = false;
+  gameOverActive = false;
+  gameOverTimer = 0;
+  blackoutOverlay.style.opacity = "0";
+  resetGame();
+  showStartScreen();
+  roomStatus.textContent = "Game reset.";
+}
+
+function forceReleaseCageGhosts() {
+  allGhosts.forEach((g) => {
+    if (g.startsInsideCage && !g.isEaten && !g.isReleased) {
+      g.releaseTimer = 0;
+      g.cageMode = "leavingCage";
+      g.cageExitStep = 0;
+    }
+  });
+
+  roomStatus.textContent = "Cage ghosts released.";
+}
+
+function triggerVulnerableMode() {
+  activateGhostVulnerable();
+  roomStatus.textContent = "Vulnerable mode activated.";
+}
+
+function triggerGameOverTest() {
+  lives = 0;
+  updateHUD();
+  startGameOverSequence();
+}
+
+function createDebugButton(label, onClick) {
+  const btn = document.createElement("button");
+  btn.textContent = label;
+  btn.type = "button";
+
+  btn.style.padding = "10px 14px";
+  btn.style.border = "2px solid white";
+  btn.style.borderRadius = "8px";
+  btn.style.background = "black";
+  btn.style.color = "white";
+  btn.style.fontWeight = "bold";
+  btn.style.cursor = "pointer";
+  btn.style.fontFamily = "'Press Start 2P', monospace";
+  btn.style.fontSize = "10px";
+  btn.style.whiteSpace = "nowrap";
+
+  btn.addEventListener("mouseenter", () => {
+    btn.style.background = "white";
+    btn.style.color = "black";
+  });
+
+  btn.addEventListener("mouseleave", () => {
+    btn.style.background = "black";
+    btn.style.color = "white";
+  });
+
+  btn.addEventListener("click", onClick);
+  return btn;
+}
+
+function createDebugButtons() {
+  const debugPanel = document.createElement("div");
+  debugPanel.id = "debugMenuPanel";
+
+  debugPanel.style.position = "fixed";
+  debugPanel.style.left = "14px";
+  debugPanel.style.bottom = "14px";
+  debugPanel.style.zIndex = "999998";
+  debugPanel.style.display = "flex";
+  debugPanel.style.flexDirection = "column";
+  debugPanel.style.alignItems = "flex-start";
+  debugPanel.style.gap = "8px";
+  debugPanel.style.fontFamily = "'Press Start 2P', monospace";
+  debugPanel.style.pointerEvents = "auto";
+
+  const toggleBtn = document.createElement("button");
+  toggleBtn.id = "debugMenuToggle";
+  toggleBtn.textContent = "TOOLS +";
+  toggleBtn.type = "button";
+
+  toggleBtn.style.padding = "10px 14px";
+  toggleBtn.style.border = "2px solid white";
+  toggleBtn.style.borderRadius = "8px";
+  toggleBtn.style.background = "black";
+  toggleBtn.style.color = "white";
+  toggleBtn.style.fontWeight = "bold";
+  toggleBtn.style.cursor = "pointer";
+  toggleBtn.style.fontFamily = "'Press Start 2P', monospace";
+  toggleBtn.style.fontSize = "10px";
+
+  const buttonsWrap = document.createElement("div");
+  buttonsWrap.id = "debugMenuButtons";
+  buttonsWrap.style.display = "none";
+  buttonsWrap.style.flexWrap = "wrap";
+  buttonsWrap.style.gap = "8px";
+  buttonsWrap.style.maxWidth = "620px";
+  buttonsWrap.style.padding = "10px";
+  buttonsWrap.style.border = "2px solid white";
+  buttonsWrap.style.borderRadius = "10px";
+  buttonsWrap.style.background = "rgba(0, 0, 0, 0.88)";
+
+  let debugMenuOpen = false;
+
+  function setDebugMenuOpen(open) {
+    debugMenuOpen = open;
+    buttonsWrap.style.display = debugMenuOpen ? "flex" : "none";
+    toggleBtn.textContent = debugMenuOpen ? "TOOLS -" : "TOOLS +";
+  }
+
+  toggleBtn.addEventListener("click", () => {
+    setDebugMenuOpen(!debugMenuOpen);
+  });
+
+  const testWinBtn = createDebugButton("TEST WIN", clearAllDotsAndStartEnding);
+
+  const invincibleBtn = createDebugButton("INVINCIBLE: OFF", () => {
+    toggleInvincibleMode();
+    invincibleBtn.textContent = invincibleMode
+      ? "INVINCIBLE: ON"
+      : "INVINCIBLE: OFF";
+
+    invincibleBtn.style.background = invincibleMode ? "#00a000" : "black";
+    invincibleBtn.style.color = "white";
+  });
+
+  const releaseBtn = createDebugButton("RELEASE GHOSTS", forceReleaseCageGhosts);
+  const vulnerableBtn = createDebugButton("VULNERABLE", triggerVulnerableMode);
+  const gameOverBtn = createDebugButton("GAME OVER", triggerGameOverTest);
+  const resetBtn = createDebugButton("RESET", restartGameNow);
+
+  buttonsWrap.appendChild(testWinBtn);
+  buttonsWrap.appendChild(invincibleBtn);
+  buttonsWrap.appendChild(releaseBtn);
+  buttonsWrap.appendChild(vulnerableBtn);
+  buttonsWrap.appendChild(gameOverBtn);
+  buttonsWrap.appendChild(resetBtn);
+
+  debugPanel.appendChild(toggleBtn);
+  debugPanel.appendChild(buttonsWrap);
+  document.body.appendChild(debugPanel);
+
+  // Start collapsed.
+  setDebugMenuOpen(false);
+}
+
+window.clearAllDotsAndStartEnding = clearAllDotsAndStartEnding;
+window.toggleInvincibleMode = toggleInvincibleMode;
+window.forceReleaseCageGhosts = forceReleaseCageGhosts;
+window.triggerVulnerableMode = triggerVulnerableMode;
+window.triggerGameOverTest = triggerGameOverTest;
+
+/* ================= END TEMPORARY DEBUG MENU ================= */
+
+window.toggleInvincibleMode = toggleInvincibleMode;
+window.forceReleaseCageGhosts = forceReleaseCageGhosts;
+window.triggerVulnerableMode = triggerVulnerableMode;
 
 // Hard HUD lives fix.
 // The old .life-icon class drew the yellow < shape.
@@ -1669,7 +1890,8 @@ const player = {
   deathPhase: 0,
   pauseTimer: 0,
   deathTimer: 0,
-  postDeathTimer: 0
+  postDeathTimer: 0,
+  failSoundPlayed: false
 };
 
 function createGhost(col, row, nextDx, nextDy, direction, releaseDelay = 0, startsInsideCage = false) {
@@ -1861,24 +2083,14 @@ function setQueuedDirection(action) {
 }
 
 function connectRoom() {
-  const room = setRoomCodeDisplay(getRoomCode());
-
-  if (!room) {
-    if (inputRef) {
-      inputRef.off();
-      inputRef = null;
-    }
-
-    roomStatus.textContent = "Enter room code.";
-    return;
-  }
+  const room = (roomInput.value.trim() || "ABCD").toUpperCase();
 
   if (inputRef) inputRef.off();
 
   inputRef = db.ref("rooms/" + room + "/input");
 
   roomStatus.textContent = "Connected: " + room;
-  setRoomCodeDisplay(room);
+  hudRoom.textContent = room;
 
   inputRef.on("value", (snap) => {
     const data = snap.val();
@@ -1897,35 +2109,12 @@ function connectRoom() {
   });
 }
 
-if (hudRoom && "value" in hudRoom) {
-  hudRoom.addEventListener("input", () => {
-    const clean = cleanRoomCode(hudRoom.value);
-    hudRoom.value = clean;
-    if (roomInput) roomInput.value = clean;
-  });
-
-  hudRoom.addEventListener("keydown", (event) => {
-    // Prevent typing A/B/W/S/D in the room field from controlling the game.
-    event.stopPropagation();
-
-    if (event.key === "Enter") {
-      event.preventDefault();
-      hudRoom.blur();
-      connectRoom();
-    }
-  });
-
-  hudRoom.addEventListener("change", () => {
-    connectRoom();
-  });
-}
-
-if (connectBtn) connectBtn.addEventListener("click", connectRoom);
+connectBtn.addEventListener("click", connectRoom);
 
 // Auto-connect because the JOIN button is hidden in this single-file version.
 // This keeps the game listening to the same room used by the background QR.
-if (window.PACMAN_ROOM) {
-  setRoomCodeDisplay(window.PACMAN_ROOM, "ABCD");
+if (window.PACMAN_ROOM && roomInput) {
+  roomInput.value = String(window.PACMAN_ROOM).toUpperCase();
 }
 connectRoom();
 
@@ -1934,6 +2123,7 @@ connectRoom();
 ========================== */
 window.addEventListener("keydown", (e) => {
   GameSound.unlock();
+  GameSound.playPendingStartIfNeeded();
 
   const key = e.key.toLowerCase();
 
@@ -1953,6 +2143,7 @@ window.addEventListener("keydown", (e) => {
   else if (key === "s" || key === "arrowdown") setQueuedDirection("down");
   else if (key === "a" || key === "arrowleft") setQueuedDirection("left");
   else if (key === "d" || key === "arrowright") setQueuedDirection("right");
+  else if (key === "i") toggleInvincibleMode();
 });
 
 /* ==========================
@@ -2754,6 +2945,13 @@ function checkGhostCollision(g) {
     player.isDead = true;
     GameSound.stopBackgroundLoops();
 
+    // Start fail audio at death trigger, slightly before the death sprite loop,
+    // so the sound lines up better visually.
+    if (!player.failSoundPlayed) {
+      GameSound.playGameOver();
+      player.failSoundPlayed = true;
+    }
+
     player.moving = false;
     allGhosts.forEach((ghostItem) => {
       ghostItem.moving = false;
@@ -2763,6 +2961,7 @@ function checkGhostCollision(g) {
     player.pauseTimer = 0;
     player.deathTimer = 0;
     player.postDeathTimer = 0;
+    player.failSoundPlayed = false;
   }
 }
 
@@ -3090,8 +3289,6 @@ function updateEntity(ent, dt, isPlayer) {
 function startGameOverSequence() {
   if (gameOverActive) return;
 
-  GameSound.playGameOver();
-
   endingStarted = false;
   gameOverActive = true;
   gameOverTimer = GAME_OVER_DURATION;
@@ -3157,6 +3354,8 @@ function resetRound() {
   player.pauseTimer = 0;
   player.deathTimer = 0;
   player.postDeathTimer = 0;
+  player.failSoundPlayed = false;
+  player.failSoundPlayed = false;
 
   respawnGhost(ghost, 1, 0, "right", true);
   respawnGhost(tealGhost, 0, -1, "up", true);
@@ -3531,6 +3730,8 @@ function update(time) {
 
       if (player.pauseTimer >= 1.0) {
         player.deathPhase = 1;
+
+        // Fail audio already started at the death trigger for better sync.
       }
     } else if (player.deathPhase === 1) {
       player.deathTimer += dt * 10;
@@ -3568,6 +3769,7 @@ function update(time) {
 GameSound.init();
 setupGameSoundUnlockers();
 eatDotAt(player.col, player.row);
+createDebugButtons();
 updateHUD();
 setupScreenWakeLock();
 
@@ -3575,7 +3777,6 @@ setupScreenWakeLock();
 // After GAME OVER, the game still goes to the CONTINUE / START screen.
 screenState = "playing";
 gameFrozen = false;
-GameSound.playStart();
 startReadyFreeze("Starting...");
 requestAnimationFrame(update);
   }
