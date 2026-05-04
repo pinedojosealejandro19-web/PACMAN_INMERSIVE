@@ -10,6 +10,9 @@ http://youtube.com/watch?v=RZsYQDBQFig
 WARNING:
 the game was made to use with Screen/Projection mapping.
 
+SOON:
+Bluetooth controlet compartibility.
+
 Immersive Pac-Man is an open-source web game inspired by the classic arcade experience, redesigned for projection mapping, immersive environments, and creative public play.
 
 This project is built with **HTML, JavaScript, and CSS**, and includes custom sprites, sound effects, keyboard controls, and a QR-based mobile controller powered by Firebase. It was created as an experimental web game that can run directly in the browser and be shared through a public URL.
