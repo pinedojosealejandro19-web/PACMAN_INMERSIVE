@@ -1,4 +1,14 @@
 # Immersive Pac-Man
+ONLINE GAME:
+https://pinedojosealejandro19-web.github.io/PACMAN_INMERSIVE/
+
+INSPO:
+https://www.elumenati.com/news/3d-pacman-immersive-gaming-at-the-telfair-museum/
+
+http://youtube.com/watch?v=RZsYQDBQFig
+
+WARNING:
+the game was made to use with Screen/Projection mapping.
 
 Immersive Pac-Man is an open-source web game inspired by the classic arcade experience, redesigned for projection mapping, immersive environments, and creative public play.
 
