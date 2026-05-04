@@ -37,6 +37,64 @@
       align-items: center;
     }
 
+    /* ==========================
+       STARTUP LOADING SCREEN
+       Keeps the web page black until core game assets are ready.
+    ========================== */
+
+    #loadingScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 1000000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      background: #000;
+      color: #fff;
+      font-family: "Press Start 2P", monospace;
+      text-align: center;
+      pointer-events: auto;
+    }
+
+    #loadingScreen.hidden {
+      display: none !important;
+    }
+
+    .loading-title {
+      font-size: clamp(16px, 2.5vw, 34px);
+      line-height: 1.4;
+      letter-spacing: 1px;
+    }
+
+    .loading-subtitle {
+      font-size: clamp(8px, 1vw, 13px);
+      line-height: 1.6;
+      opacity: 0.8;
+    }
+
+    .loading-bar {
+      width: min(420px, 70vw);
+      height: 14px;
+      border: 2px solid white;
+      padding: 2px;
+      background: black;
+    }
+
+    #loadingBarFill {
+      width: 0%;
+      height: 100%;
+      background: white;
+      transition: width 0.08s linear;
+    }
+
+    #loadingPercent {
+      font-size: clamp(8px, 1vw, 12px);
+      opacity: 0.9;
+    }
+
+
     canvas {
       display: block;
       background: transparent;
@@ -228,6 +286,11 @@
       place-items: center;
     }
 
+    body.controller-mode #loadingScreen {
+      display: none !important;
+    }
+
+
     .controller-title {
       text-align: center;
       font-size: 15px;
@@ -315,6 +378,17 @@
 </head>
 
 <body>
+  <!-- STARTUP LOADING SCREEN -->
+  <div id="loadingScreen">
+    <div id="loadingTitle" class="loading-title">LOADING...</div>
+    <div id="loadingSubtitle" class="loading-subtitle">PREPARING IMMERSIVE PACMAN</div>
+    <div class="loading-bar">
+      <div id="loadingBarFill"></div>
+    </div>
+    <div id="loadingPercent">0%</div>
+    <div id="loadingStartHint" class="loading-subtitle" style="display:none;">PRESS A / CLICK TO START</div>
+  </div>
+
   <!-- GAME CANVAS -->
   <canvas id="game"></canvas>
 
@@ -500,9 +574,9 @@ let highScore = Number(localStorage.getItem("pacmanHighScore")) || 0;
    Rename your MP3 files exactly like this:
    sound/dot-eating.mp3
    sound/start.mp3
-   sound/end.mp3
+   sound/start.mp3
    sound/game-over.mp3
-   sound/ghost-moving.mp3
+   sound/eyes-going-to-cage.mp3
    sound/eating-ghost.mp3
    sound/eyes-going-to-cage.mp3
 
@@ -527,6 +601,7 @@ const GameSound = {
   currentLoop: null,
   pendingStartSound: false,
   firstStartSoundPlayed: false,
+  lastStartSoundTime: 0,
 
   // The fail file is longer, but only the first part is useful for the death sprite animation.
   FAIL_SOUND_MAX_MS: 2000,
@@ -536,11 +611,12 @@ const GameSound = {
     this.sounds = {
       dotEating: this.createAudio("sound/dot-eating.mp3", 0.55, false),
       start: this.createAudio("sound/start.mp3", 0.75, false),
-      end: this.createAudio("sound/end.mp3", 0.80, false),
+      end: this.createAudio("sound/start.mp3", 0.80, false),
       gameOver: this.createAudio("sound/game-over.mp3", 0.85, false),
       ghostMoving: this.createAudio("sound/ghost-moving.mp3", 0.42, true),
       eatingGhost: this.createAudio("sound/eating-ghost.mp3", 0.85, false),
-      eyesToCage: this.createAudio("sound/eyes-going-to-cage.mp3", 0.65, true)
+      eyesToCage: this.createAudio("sound/eyes-going-to-cage.mp3", 0.65, true),
+      vulnerableMode: this.createAudioWithFallback("sound/vulnerable-mode.mp3", "sound/vulnerable-mode.mp3.mp3", 0.70, true)
     };
 
     const dot = this.sounds.dotEating;
@@ -565,7 +641,31 @@ const GameSound = {
     audio.loop = loop;
 
     audio.addEventListener("error", () => {
-      console.warn("Sound file could not load:", src);
+      console.error("MISSING SOUND FILE:", src);
+    });
+
+    audio.load();
+    return audio;
+  },
+
+  createAudioWithFallback(primarySrc, fallbackSrc, volume = 1, loop = false) {
+    const audio = new Audio(primarySrc);
+    audio.preload = "auto";
+    audio.volume = volume;
+    audio.loop = loop;
+
+    let usingFallback = false;
+
+    audio.addEventListener("error", () => {
+      if (!usingFallback && fallbackSrc) {
+        usingFallback = true;
+        console.warn("Primary sound missing, trying fallback:", primarySrc, "→", fallbackSrc);
+        audio.src = fallbackSrc;
+        audio.load();
+        return;
+      }
+
+      console.error("MISSING SOUND FILE:", audio.src);
     });
 
     audio.load();
@@ -646,6 +746,19 @@ const GameSound = {
     this.safePlay(audio);
   },
 
+  startOverlayLoop(name) {
+    const audio = this.sounds[name];
+    if (!audio) return;
+
+    // Overlay loops do not stop other loops.
+    // This is used so eyes-going-to-cage can play over vulnerable-mode.
+    if (!audio.paused) return;
+
+    audio.loop = true;
+    audio.currentTime = 0;
+    this.safePlay(audio);
+  },
+
   stopLoop(name, reset = true) {
     const audio = this.sounds[name];
     if (!audio) return;
@@ -661,6 +774,7 @@ const GameSound = {
   stopBackgroundLoops() {
     this.stopLoop("ghostMoving");
     this.stopLoop("eyesToCage");
+    this.stopLoop("vulnerableMode");
     this.currentLoop = null;
   },
 
@@ -696,14 +810,22 @@ const GameSound = {
     const audio = this.sounds.start;
     if (!audio) return;
 
+    const now = performance.now();
+
+    // Prevent the start sound from firing twice from the same click/key event.
+    if (!force && now - this.lastStartSoundTime < 1200) {
+      return;
+    }
+
+    this.lastStartSoundTime = now;
     this.stopBackgroundLoops();
 
+    this.pendingStartSound = false;
     audio.pause();
     audio.currentTime = 0;
 
     this.safePlay(audio, () => {
-      // First game auto-starts, so browsers may block this sound.
-      // Keep it pending and play it as soon as the page receives interaction.
+      // If the browser blocks it, keep it pending for the next real interaction.
       this.pendingStartSound = true;
     });
 
@@ -777,13 +899,29 @@ const GameSound = {
       return;
     }
 
-    const hasEyesReturning = allGhosts.some((g) => g.isEaten && g.mode === "eyes");
+    const hasEyesReturning = allGhosts.some((g) => {
+      return g.isEaten && g.mode === "eyes";
+    });
 
-    if (hasEyesReturning) {
-      this.startLoop("eyesToCage");
-      return;
+    const hasVulnerableGhosts = allGhosts.some((g) => {
+      return g.isVulnerable && !g.isEaten;
+    });
+
+    // Vulnerable mode can keep playing underneath.
+    if (hasVulnerableGhosts) {
+      this.startOverlayLoop("vulnerableMode");
+    } else {
+      this.stopLoop("vulnerableMode");
     }
 
+    // Eyes-to-cage overlays vulnerable mode instead of replacing it.
+    if (hasEyesReturning) {
+      this.startOverlayLoop("eyesToCage");
+    } else {
+      this.stopLoop("eyesToCage");
+    }
+
+    // Normal ghost movement should not compete with vulnerable or eyes audio.
     const hasActiveGhostMoving = allGhosts.some((g) => {
       if (g.isEaten) return false;
       if (g.cageMode === "waitingInCage") return true;
@@ -791,10 +929,10 @@ const GameSound = {
       return g.isReleased && (g.moving || g.cageMode === "outside");
     });
 
-    if (hasActiveGhostMoving) {
+    if (hasActiveGhostMoving && !hasVulnerableGhosts && !hasEyesReturning) {
       this.startLoop("ghostMoving");
     } else {
-      this.stopBackgroundLoops();
+      this.stopLoop("ghostMoving");
     }
   }
 };
@@ -803,7 +941,6 @@ function setupGameSoundUnlockers() {
   ["click", "keydown", "touchstart", "pointerdown"].forEach((eventName) => {
     window.addEventListener(eventName, () => {
       GameSound.unlock();
-      GameSound.playPendingStartIfNeeded();
     }, { once: false });
   });
 }
@@ -905,14 +1042,15 @@ let gameOverActive = false;
 let gameOverLoopSeen = false;
 let gameOverResetTimeout = null;
 
-function startReadyFreeze(statusText = "Starting...") {
+function startReadyFreeze(statusText = "Starting...", playStartSound = false) {
   if (endingStarted) return;
 
   readyFreezeTimer = READY_FREEZE_DURATION;
 
-  // Play the start audio every time the READY screen appears.
-  // If the browser blocks autoplay, GameSound keeps it pending until the next interaction.
-  if (typeof GameSound !== "undefined") {
+  // Start audio plays only at the beginning of a full game:
+  // first load and after Game Over/new 3-life restart.
+  // It does not play after every life respawn.
+  if (playStartSound && typeof GameSound !== "undefined") {
     GameSound.playStart();
   }
 
@@ -930,11 +1068,11 @@ function shouldHideGhostsDuringReady() {
 }
 
 
-function startInitialReadyFreeze(statusText = "Starting...") {
+function startInitialReadyFreeze(statusText = "Starting...", playStartSound = false) {
   if (readyIntroAlreadyPlayed) return;
 
   readyIntroAlreadyPlayed = true;
-  startReadyFreeze(statusText);
+  startReadyFreeze(statusText, playStartSound);
 }
 
 
@@ -960,7 +1098,7 @@ function startFromStartScreen() {
 
   screenState = "playing";
   gameFrozen = false;
-  startReadyFreeze("Starting...");
+  startReadyFreeze("Starting...", true);
 }
 
 function showPauseScreen() {
@@ -2250,6 +2388,11 @@ function teleport(ent, targetTile, c, r) {
    GHOST STATE
 ========================== */
 function activateGhostVulnerable() {
+  if (typeof GameSound !== "undefined") {
+    GameSound.stopLoop("ghostMoving");
+    GameSound.startOverlayLoop("vulnerableMode");
+  }
+
   allGhosts.forEach((g) => {
     if (g.isEaten) return;
 
@@ -2261,6 +2404,11 @@ function activateGhostVulnerable() {
 
 function eatGhost(g) {
   GameSound.playEatingGhost();
+
+  // Eyes-to-cage audio overlays vulnerable mode while the eaten ghost returns home.
+  if (typeof GameSound !== "undefined") {
+    GameSound.startOverlayLoop("eyesToCage");
+  }
 
   const ghostScoreValue = getNextGhostScoreValue();
   updateScore(ghostScoreValue);
@@ -3370,7 +3518,7 @@ function restartAfterGameOver() {
   resetGame();
 
   // After GAME OVER, show the READY page again before the new game starts.
-  startReadyFreeze("Starting...");
+  startReadyFreeze("Starting...", true);
 }
 
 function resetGame() {
@@ -3763,22 +3911,189 @@ function update(time) {
   requestAnimationFrame(update);
 }
 
+
+/* ==========================
+   STARTUP ASSET LOADER
+   The game starts only after the main image textures are loaded.
+   Audio is preloaded but not allowed to block forever because browsers control audio loading.
+========================== */
+const loadingScreen = document.getElementById("loadingScreen");
+const loadingBarFill = document.getElementById("loadingBarFill");
+const loadingPercent = document.getElementById("loadingPercent");
+
+function setLoadingProgress(loaded, total) {
+  const pct = total <= 0 ? 100 : Math.round((loaded / total) * 100);
+
+  if (loadingBarFill) {
+    loadingBarFill.style.width = pct + "%";
+  }
+
+  if (loadingPercent) {
+    loadingPercent.textContent = pct + "%";
+  }
+}
+
+function hideLoadingScreen() {
+  if (loadingScreen) {
+    loadingScreen.classList.add("hidden");
+  }
+}
+
+function waitForImageAsset(img) {
+  return new Promise((resolve) => {
+    if (!img) {
+      resolve(false);
+      return;
+    }
+
+    if (img.complete && img.naturalWidth > 0) {
+      resolve(true);
+      return;
+    }
+
+    img.addEventListener("load", () => resolve(true), { once: true });
+    img.addEventListener("error", () => {
+      console.warn("Image asset could not load:", img.src);
+      resolve(false);
+    }, { once: true });
+  });
+}
+
+function getStartupImageAssets() {
+  const images = [];
+
+  function add(img) {
+    if (img && !images.includes(img)) {
+      images.push(img);
+    }
+  }
+
+  add(mapTexture);
+  add(readyMapTexture);
+  add(gameOverMapTexture);
+  add(pauseMapTexture);
+  add(continueMapTexture);
+  add(bigDotTexture);
+
+  pacmanSprites.forEach(add);
+  deathSprites.forEach(add);
+  vulnerableSprites.forEach(add);
+
+  Object.values(eatenGhostEyeSprites).forEach(add);
+  Object.values(eatenGhostSprites).forEach(add);
+  Object.values(ghostScoreSprites).forEach(add);
+  Object.values(ghostPointSprites).forEach(add);
+
+  [
+    ghostSprites,
+    orangeGhostSprites,
+    tealGhostSprites,
+    pinkGhostSprites
+  ].forEach((spriteSet) => {
+    Object.values(spriteSet).forEach((frames) => {
+      frames.forEach(add);
+    });
+  });
+
+  return images;
+}
+
+function preloadGameSoundsNonBlocking() {
+  if (typeof GameSound === "undefined" || !GameSound.sounds) return;
+
+  Object.values(GameSound.sounds).forEach((audio) => {
+    try {
+      audio.preload = "auto";
+      audio.load();
+    } catch (err) {}
+  });
+}
+
+async function startGameAfterAssetsLoaded() {
+  const imageAssets = getStartupImageAssets();
+  let loaded = 0;
+
+  setLoadingProgress(0, imageAssets.length);
+
+  await Promise.all(
+    imageAssets.map((img) => {
+      return waitForImageAsset(img).then(() => {
+        loaded += 1;
+        setLoadingProgress(loaded, imageAssets.length);
+      });
+    })
+  );
+
+  preloadGameSoundsNonBlocking();
+
+  showStartAfterLoadingPrompt();
+}
+
+let firstRuntimeStarted = false;
+
+function showStartAfterLoadingPrompt() {
+  const title = document.getElementById("loadingTitle");
+  const subtitle = document.getElementById("loadingSubtitle");
+  const hint = document.getElementById("loadingStartHint");
+
+  if (title) title.textContent = "READY";
+  if (subtitle) subtitle.textContent = "ASSETS LOADED";
+  if (hint) hint.style.display = "block";
+
+  setLoadingProgress(loadedAssetCountSafe(), loadedAssetCountSafe());
+
+  const startOnce = (event) => {
+    if (firstRuntimeStarted) return;
+
+    if (event) {
+      event.preventDefault?.();
+    }
+
+    firstRuntimeStarted = true;
+
+    window.removeEventListener("click", startOnce);
+    window.removeEventListener("keydown", startOnce);
+    window.removeEventListener("touchstart", startOnce);
+    window.removeEventListener("pointerdown", startOnce);
+
+    hideLoadingScreen();
+    startGameRuntime();
+  };
+
+  window.addEventListener("click", startOnce);
+  window.addEventListener("keydown", startOnce);
+  window.addEventListener("touchstart", startOnce);
+  window.addEventListener("pointerdown", startOnce);
+}
+
+function loadedAssetCountSafe() {
+  const imageAssets = getStartupImageAssets();
+  return imageAssets.length || 1;
+}
+
+function startGameRuntime() {
+  GameSound.unlock();
+
+  eatDotAt(player.col, player.row);
+  createDebugButtons();
+  updateHUD();
+  setupScreenWakeLock();
+
+  // First READY starts only after real interaction,
+  // so start.mp3 can begin exactly with the 4-second READY screen.
+  screenState = "playing";
+  gameFrozen = false;
+  startReadyFreeze("Starting...", true);
+  requestAnimationFrame(update);
+}
+
+
 /* ==========================
    START
 ========================== */
 GameSound.init();
 setupGameSoundUnlockers();
-eatDotAt(player.col, player.row);
-createDebugButtons();
-updateHUD();
-setupScreenWakeLock();
-
-// First load auto-starts the game.
-// After GAME OVER, the game still goes to the CONTINUE / START screen.
-screenState = "playing";
-gameFrozen = false;
-startReadyFreeze("Starting...");
-requestAnimationFrame(update);
+startGameAfterAssetsLoaded();
   }
   </script>
 </body>
