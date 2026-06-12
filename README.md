@@ -14,7 +14,7 @@ WARNING:
 the game was made to use with Screen/Projection mapping.
 
 SOON:
-Bluetooth controlet compartibility.
+Bluetooth controlet compartibility. (State: Added✅)
 
 Immersive Pac-Man is an open-source web game inspired by the classic arcade experience, redesigned for projection mapping, immersive environments, and creative public play.
 
